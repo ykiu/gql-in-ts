@@ -18,11 +18,12 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm pack
+      - run: git tag -f nightly
+      - run: git push -f origin nightly
       - uses: ncipollo/release-action@v1
         with:
           artifacts: '*.tgz'
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
-          name: ${{ github.ref_name }}
-          commit: ${{ github.ref_name }}
-          tag: ${{ github.ref_name }}
+          name: nightly
+          tag: nightly
