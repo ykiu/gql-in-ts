@@ -24,3 +24,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
           name: ${{ github.ref_name }}
+          tag: ${{ github.ref_name }}
