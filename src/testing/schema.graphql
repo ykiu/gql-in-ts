@@ -1,0 +1,30 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  user: User!
+  posts(id_Gt: Int, author: String): [Post!]!
+}
+
+type User {
+  username: String!
+  nickname: String
+}
+
+type Post {
+  id: Int!
+  title: String!
+  content(length: Int): String!
+}
+
+type Mutation {
+  post(input: PostMutationInput!): Post!
+}
+
+input PostMutationInput {
+  id: Int
+  title: String!
+  content: String!
+}
