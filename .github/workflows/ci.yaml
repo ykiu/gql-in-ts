@@ -23,4 +23,4 @@ jobs:
           artifacts: '*.tgz'
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
-          name: ${{ github.ref }}
+          name: ${{ github.ref_name }}
