@@ -1,7 +1,7 @@
 {
   "name": "gql-in-ts",
   "version": "0.1.0",
-  "description": "A TypeScript-first GraphQL query builder",
+  "description": "A type-safe way to write GraphQL.",
   "main": "dist/index.js",
   "bin": "dist/compileGraphqlSchema.js",
   "type": "module",
