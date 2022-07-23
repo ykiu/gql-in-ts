@@ -14,10 +14,17 @@ type User {
   nickname: String
 }
 
+enum PostStatus {
+  DRAFT
+  PUBLIC
+  ARCHIVED
+}
+
 type Post {
   id: Int!
   title: String!
   content(maxLength: Int): String!
+  status: PostStatus!
 }
 
 input LoginInput {

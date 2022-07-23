@@ -60,13 +60,16 @@ describe('Result', () => {
         username: true,
         nickname: true,
       },
-      'posts as myPosts': [{ author: 'me' }, { title: true, content: [{ maxLength: 300 }, true] }],
+      'posts as myPosts': [
+        { author: 'me' },
+        { title: true, content: [{ maxLength: 300 }, true], status: true },
+      ],
     });
     expectType<
       Result<typeof typedQuery>,
       To.BeAssignableTo<{
         user: { username: string; nickname: string | null };
-        myPosts: { title: string; content: string }[];
+        myPosts: { title: string; content: string; status: 'DRAFT' | 'PUBLIC' | 'ARCHIVED' }[];
       }>
     >();
   });

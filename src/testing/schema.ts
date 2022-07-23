@@ -40,6 +40,8 @@ export type User = {
     type: User;
   };
 };
+const PostStatusValues = ['DRAFT', 'PUBLIC', 'ARCHIVED'] as const;
+type PostStatus = Predicate<typeof PostStatusValues extends readonly (infer T)[] ? T : never>;
 export type Post = {
   id: {
     arguments: {};
@@ -52,6 +54,10 @@ export type Post = {
   content: {
     arguments: { maxLength: { type: Nullable<Predicate<number>> } };
     type: Predicate<string>;
+  };
+  status: {
+    arguments: {};
+    type: PostStatus;
   };
   '...': {
     arguments: {};
