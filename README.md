@@ -63,9 +63,11 @@ Generate TypeScript code from your schema:
 npx compileGraphqlSchema yourSchema.graphql yourSchema.ts
 ```
 
-Now you are ready to get underway.
+Now you are ready to get started.
 
-## Basic usage
+## Core concepts
+
+### The `graphql` function
 
 The generated module exports a function named `graphql`, which helps to write typed GraphQL queries.
 
@@ -95,6 +97,25 @@ const graphql = () => (arg) => arg;
 
 The true value of `graphql` lies in its type definition. It constrains its arguments so that it only accepts a valid GraphQL query. If you forgot to provide a required argument for a field, for example, you'll get a TypeScript error. It also serves as a trigger for auto-completion. If you are using a TypeScript-aware editor, you'll get completion for field names as you type.
 
+You can split up a large query into smaller pieces, much like you do with GraphQL fragments:
+
+```ts
+const userFragment = graphql('User')({
+  username: true,
+  nickname: true,
+});
+const postFragment = graphql('Post')({
+  title: true,
+  content: true,
+});
+const query = graphql('Query')({
+  user: userFragment,
+  posts: [{ author: 'me' }, postFragment],
+});
+```
+
+### The `Result` type
+
 Now, how would you know the shape of the response that would be returned for the query you wrote? Use the `Result` type for that:
 
 ```ts
@@ -115,6 +136,8 @@ type QueryResult = Result<typeof query>;
 ```
 
 **`Result` is the heart and soul of `gql-in-ts`.** It does all the heavy lifting of mapping the shape of the query to the shape of the actual data that would be returned from the GraphQL server. `Result` does this by relying on the TypeScript ability to do complex computations such as [mapping object properties](https://www.typescriptlang.org/docs/handbook/2/mapped-types.html) and [making conditions](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html) as part of type checking.
+
+### The `compileQuery` function
 
 Finally, it's time to build an actual GraphQL query! Compile the query into string by using `compileQuery`:
 
@@ -143,6 +166,17 @@ While at runtime `compileQuery` returns an ordinary string, at the TypeScript le
 type MyResult = typeof compiled extends GraphQLString<infer T, never> ? TResult : never;
 ```
 
+Because `graphql` is just a helper for type checking, you can skip calling it and define your query inline in `compileQuery`:
+
+```ts
+import { compileQuery } from './yourSchema';
+
+const compiled = compileQuery(null)({
+  user: userFragment,
+  posts: [{ author: 'me' }, postFragment],
+});
+```
+
 That's all for the basics. Note that `gql-in-ts` is agnostic of the transport layer: it's your responsibility to actually send a request to your backend server. That said, most GraphQL endpoints are [served over HTTP](https://graphql.org/learn/serving-over-http/), so let me include an example demonstrating how to send a typed GraphQL query using `fetch`:
 
 ```ts
@@ -168,7 +202,7 @@ Putting it altogether, the code looks like:
 
 ```
 
-## Aliases
+## Using aliases
 
 `gql-in-ts` supports aliases via special keys with the pattern "[original name] as [alias]":
 
@@ -178,31 +212,29 @@ Putting it altogether, the code looks like:
 
 This is made possible thanks to [template literal types](https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html) introduced in TypeScript 4.1.
 
-## Fragments
+## Merging field selections
 
-Fragments allow to split a large, complex query into smaller, managable pieces. `gql-in-ts` supports and encourages the use of fragments. The query from the previous example can be split up like:
+Sometimes you may want to "merge" field selections from different pieces of a query. This can be done in GraphQL using fragment spread:
+
+```graphql
+
+```
+
+You can do the equivalent by using the special key spelled "...":
 
 ```ts
 
 ```
 
-You can place the fragment that describes the shape of data right next to the code that needs that data, a pattern known as "collocation".
-
-Sometimes you may want to "merge" the contents of a fragment into a larger query or fragment. You can do so by using the special key spelled "...":
+To do the merging more than once, give "..." an arbitrary alias to avoid defining multiple properties with the same name:
 
 ```ts
 
 ```
 
-You can "merge" more than one fragment by adding an alias to "..." like:
+## Using variables
 
-```ts
-
-```
-
-## Variables
-
-`gql-in-ts` supports GraphQL variables. Variables allow you to compile a query once and use the compiled query over and over again with different parameters, minimizing the overhead of compiling.
+`gql-in-ts` supports GraphQL variables. Variables allow you to compile a query once and use the same query over and over again with different parameters, minimizing the overhead of compiling.
 
 To use variables, declare the names and the types of the variables and pass a callback to `graphql`:
 
@@ -213,6 +245,12 @@ To use variables, declare the names and the types of the variables and pass a ca
 As with aliases, variable definitions are type checked thanks to template literal types.
 
 As in the first example, `graphql` returns the last argument, which is a callback in this case, unmodified. You can call the returned callback in other queries to compose a bigger query:
+
+```ts
+
+```
+
+When compiling a query with variables, pass the definitions of the variables and a callback to `compileQuery`, as you would do with `graphql`:
 
 ```ts
 
