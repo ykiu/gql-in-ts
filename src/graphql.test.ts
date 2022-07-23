@@ -7,7 +7,7 @@ import {
   Result,
   Selection,
 } from './graphql';
-import { Mutation, Query, compileMutation, compileQuery, graphql } from './testing/schema';
+import { Mutation, Query, graphql, compileGraphQL } from './testing/schema';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function expectType<TActual extends TExpected, TExpected>() {
@@ -161,7 +161,7 @@ describe('compileSelection', () => {
 
   it('can compile a basic query', () => {
     expect(
-      compileQuery(null)({
+      compileGraphQL('query')({
         user: {
           username: true,
           nickname: true,
@@ -188,7 +188,7 @@ query {
   });
   it('recursively merges fragment spreads', () => {
     expect(
-      compileQuery(null)({
+      compileGraphQL('query')({
         '...': {
           '...': {
             posts: {
@@ -215,7 +215,7 @@ query {
   });
 
   it('can compile a variable of type list', () => {
-    const compiled = compileMutation({ inputs: '[MutatePostInput!]!' })(($) => ({
+    const compiled = compileGraphQL('mutation', { inputs: '[MutatePostInput!]!' })(($) => ({
       bulkCreatePosts: [{ inputs: $.inputs }, { id: true }],
     }));
     expect(compiled).toEqual(
@@ -265,7 +265,7 @@ mutation($inputs: [MutatePostInput!]!) {
     expectType<typeof result, To.BeAssignableTo<{ bulkCreatePosts: { title: string }[] }>>();
   });
   it('can compile a variable of input', () => {
-    const compiled = compileMutation({ input: 'LoginInput!' })(($) => ({
+    const compiled = compileGraphQL('mutation', { input: 'LoginInput!' })(($) => ({
       login: [{ input: $.input }, { token: true, user: { username: true } }],
     }));
     expect(compiled).toEqual(

@@ -17,6 +17,7 @@ import {
   ScalarTypeDefinitionNode,
   TypeNode,
   parse,
+  SchemaDefinitionNode,
 } from 'graphql';
 
 const scalars = {
@@ -73,6 +74,12 @@ const processFieldDefinition = (node: FieldDefinitionNode) => `{
   type: ${processType(node.type)};
 }`;
 
+const processSchemaDefinition = (node: SchemaDefinitionNode) => {
+  return `export type Schema = {${node.operationTypes
+    .map((node) => `${node.operation}: ${node.type.name.value}`)
+    .join(';\n')}};`;
+};
+
 const processObjectTypeOrInterfaceDefinition = (
   node: ObjectTypeDefinitionNode | InterfaceTypeDefinitionNode,
 ) => {
@@ -114,6 +121,8 @@ const processScalarTypeDefinition = (node: ScalarTypeDefinitionNode) => {
 
 const processDefinition = (node: DefinitionNode) => {
   switch (node.kind) {
+    case 'SchemaDefinition':
+      return processSchemaDefinition(node);
     case 'ObjectTypeDefinition':
     case 'InterfaceTypeDefinition':
       return processObjectTypeOrInterfaceDefinition(node);
@@ -164,14 +173,11 @@ import {
   Nullable,
   Predicate,
   makeGraphql,
-  makeCompileSelection,
-  makeDefineVariables,
+  makeCompileGraphQL,
 } from '${params.importPath}';`;
 
 const footer = `export const graphql = makeGraphql<ObjectTypeNamespace, InputTypeNamespace>();
-export const compileQuery = makeCompileSelection<InputTypeNamespace, Query>('query');
-export const compileMutation = makeCompileSelection<InputTypeNamespace, Mutation>('mutation');
-export const defineVariables = makeDefineVariables<InputTypeNamespace>();
+export const compileGraphQL = makeCompileGraphQL<InputTypeNamespace, Schema>();
 `;
 
 const compile = (source: string, params: { importPath: string }) => {

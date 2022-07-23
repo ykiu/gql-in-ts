@@ -24,7 +24,7 @@
     "check": "npm run check:prettier && npm run check:eslint && tsc --noEmit",
     "check:prettier": "prettier ./src --check",
     "check:eslint": "eslint ./src",
-    "schema": "node ./dist/compileGraphqlSchema.js ./src/testing/schema.graphql ./src/testing/schema.ts --import-path \"../graphql\" && eslint ./src/testing/schema.ts --fix &&  prettier ./src/testing/schema.ts --write",
+    "schema": "tsc -p tsconfig.cli.json && node ./dist/compileGraphqlSchema.js ./src/testing/schema.graphql ./src/testing/schema.ts --import-path \"../graphql\" && eslint ./src/testing/schema.ts --fix &&  prettier ./src/testing/schema.ts --write",
     "build": "rimraf dist && tsc",
     "test": "vitest"
   },

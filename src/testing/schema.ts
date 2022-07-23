@@ -1,13 +1,7 @@
 // This file is auto-generated with compileGraphqlSchema.ts.
 
-import {
-  List,
-  Nullable,
-  Predicate,
-  makeGraphql,
-  makeCompileSelection,
-  makeDefineVariables,
-} from '../graphql';
+import { List, Nullable, Predicate, makeGraphql, makeCompileGraphQL } from '../graphql';
+export type Schema = { query: Query; mutation: Mutation };
 export type Query = {
   user: {
     arguments: {};
@@ -118,6 +112,4 @@ export type InputTypeNamespace = {
   MutatePostInput: MutatePostInput;
 };
 export const graphql = makeGraphql<ObjectTypeNamespace, InputTypeNamespace>();
-export const compileQuery = makeCompileSelection<InputTypeNamespace, Query>('query');
-export const compileMutation = makeCompileSelection<InputTypeNamespace, Mutation>('mutation');
-export const defineVariables = makeDefineVariables<InputTypeNamespace>();
+export const compileGraphQL = makeCompileGraphQL<InputTypeNamespace, Schema>();

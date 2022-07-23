@@ -37,6 +37,10 @@ export type List<T extends InputType> = {
 
 type OutputType = OutputObjectType | Predicate | Wrapper<any>;
 
+type Schema = {
+  [key: string]: OutputObjectType;
+};
+
 export type OutputObjectType = {
   [key: string]: OutputObjectTypeEntry;
 };
@@ -503,36 +507,42 @@ const constructVariableReferences = <
   };
 };
 
-export const makeCompileSelection =
-  <TInputTypeNamespace extends InputTypeNamespace, TOutputObjectType extends OutputObjectType>(
-    type: 'query' | 'mutation' | 'subscription',
-  ) =>
-  <TVariables extends null | VariableDefinitions<TInputTypeNamespace>>(variables: TVariables) =>
-  <TSelection extends Selection<TOutputObjectType>>(
-    selection:
-      | TSelection
-      | ((v: VariableReferences<TInputTypeNamespace, NonNullable<TVariables>>) => TSelection),
-  ): GraphQLString<
-    Result<TSelection, TOutputObjectType>,
-    VariableReferenceValues<TInputTypeNamespace, NonNullable<TVariables>>
-  > => {
-    const cleanedVariables = (variables || {}) as NonNullable<TVariables>;
-    const { variableObjects, variableNameByVariableObject } = constructVariableReferences<
-      TInputTypeNamespace,
-      NonNullable<TVariables>
-    >(cleanedVariables);
-    const variableEntries = Object.entries(cleanedVariables);
-    const compiledVariableDefinitions = variableEntries.map(([k, v]) => `$${k}: ${v}`).join(', ');
-    const compiledVariablesWithParenth =
-      compiledVariableDefinitions.length > 0 ? `(${compiledVariableDefinitions})` : '';
-    const evaluatedSelection =
-      typeof selection === 'function' ? selection(variableObjects) : selection;
-    return compileSelectionEntry(
-      `${type}${compiledVariablesWithParenth}`,
-      [{}, evaluatedSelection],
-      variableNameByVariableObject,
-    );
-  };
+export const makeCompileGraphQL = <
+  TInputTypeNamespace extends InputTypeNamespace,
+  TSchema extends Schema,
+>() => {
+  function fn<
+    TType extends keyof TSchema & string,
+    TVariables extends VariableDefinitions<TInputTypeNamespace>,
+  >(type: TType, variables?: TVariables) {
+    return <TSelection extends Selection<TSchema[TType]>>(
+      selection:
+        | TSelection
+        | ((v: VariableReferences<TInputTypeNamespace, NonNullable<TVariables>>) => TSelection),
+    ): GraphQLString<
+      Result<TSelection, TSchema[TType]>,
+      VariableReferenceValues<TInputTypeNamespace, TVariables>
+    > => {
+      const cleanedVariables = (variables || {}) as NonNullable<TVariables>;
+      const { variableObjects, variableNameByVariableObject } = constructVariableReferences<
+        TInputTypeNamespace,
+        NonNullable<TVariables>
+      >(cleanedVariables);
+      const variableEntries = Object.entries(cleanedVariables);
+      const compiledVariableDefinitions = variableEntries.map(([k, v]) => `$${k}: ${v}`).join(', ');
+      const compiledVariablesWithParenth =
+        compiledVariableDefinitions.length > 0 ? `(${compiledVariableDefinitions})` : '';
+      const evaluatedSelection =
+        typeof selection === 'function' ? selection(variableObjects) : selection;
+      return compileSelectionEntry(
+        `${type}${compiledVariablesWithParenth}`,
+        [{}, evaluatedSelection],
+        variableNameByVariableObject,
+      );
+    };
+  }
+  return fn;
+};
 
 // ---------------------------------------------------------
 // Functions for defining quries, mutations or subscriptions
@@ -570,8 +580,3 @@ export const makeGraphql = <
   }
   return fn;
 };
-
-export const makeDefineVariables =
-  <TInputTypeNamespace extends InputTypeNamespace>() =>
-  <TVariables extends VariableDefinitions<TInputTypeNamespace>>(variables: TVariables) =>
-    variables;
