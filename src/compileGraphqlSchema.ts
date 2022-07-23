@@ -176,13 +176,17 @@ import {
   makeCompileGraphQL,
 } from '${params.importPath}';`;
 
-const footer = `export const graphql = makeGraphql<ObjectTypeNamespace, InputTypeNamespace>();
+const buildFooter = (params: {
+  importPath: string;
+}) => `export const graphql = makeGraphql<ObjectTypeNamespace, InputTypeNamespace>();
 export const compileGraphQL = makeCompileGraphQL<InputTypeNamespace, Schema>();
+export type { Result, Selection, GraphQLString } from '${params.importPath}';
 `;
 
 const compile = (source: string, params: { importPath: string }) => {
   const ast = parse(source);
   const header = buildHeader(params);
+  const footer = buildFooter(params);
   const definitions = ast.definitions.map(processDefinition).filter(Boolean);
   const objectSchemaMapping = buildObjectTypeByName(ast);
   const inputObjectSchemaMapping = buildInputTypeByName(ast);

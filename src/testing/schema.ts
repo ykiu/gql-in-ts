@@ -113,3 +113,4 @@ export type InputTypeNamespace = {
 };
 export const graphql = makeGraphql<ObjectTypeNamespace, InputTypeNamespace>();
 export const compileGraphQL = makeCompileGraphQL<InputTypeNamespace, Schema>();
+export type { Result, Selection, GraphQLString } from '../graphql';

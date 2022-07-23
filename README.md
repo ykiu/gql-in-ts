@@ -3,12 +3,18 @@
 A type-safe way to write GraphQL. Express your query as a plain JavaScript object and get it typed with the power of TypeScript.
 
 ```ts
-compileQuery(null)({
+const query = graphql('Query')({
   user: {
     username: true,
     nickname: true,
   },
-  posts: [{ author: 'me' }, { title: true, content: true }],
+  posts: [
+    { author: 'me' },
+    {
+      title: true,
+      content: true,
+    },
+  ],
 });
 ```
 
@@ -119,7 +125,7 @@ const query = graphql('Query')({
 Now, how would you know the shape of the response that would be returned for the query you wrote? Use the `Result` type for that:
 
 ```ts
-import { Result } from 'gql-in-ts';
+import { Result } from './yourSchema';
 
 type QueryResult = Result<typeof query>;
 // QueryResult would be inferred as:
@@ -137,41 +143,42 @@ type QueryResult = Result<typeof query>;
 
 **`Result` is the heart and soul of `gql-in-ts`.** It does all the heavy lifting of mapping the shape of the query to the shape of the actual data that would be returned from the GraphQL server. `Result` does this by relying on the TypeScript ability to do complex computations such as [mapping object properties](https://www.typescriptlang.org/docs/handbook/2/mapped-types.html) and [making conditions](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html) as part of type checking.
 
-### The `compileQuery` function
+### The `compileGraphQL` function
 
-Finally, it's time to build an actual GraphQL query! Compile the query into string by using `compileQuery`:
+Finally, it's time to build an actual GraphQL query! Compile the query into string by using `compileGraphQL`:
 
 ```ts
-import { compileQuery } from './yourSchema';
+import { compileGraphQL } from './yourSchema';
 
-const compiled = compileQuery(null)(query);
-console.log(compiled);
-// query {
-//   user {
-//     username
-//     nickname
-//   }
-//   posts(author: "me") {
-//     title
-//     content
-//   }
-// }
+const compiled = compileGraphQL('query')(query__v1);
+expect(compiled).toEqual(
+  `query {
+  user {
+    username
+    nickname
+  }
+  posts(author: "me") {
+    title
+    content
+  }
+}`,
+);
 ```
 
-Think of `compileQuery` as a JSON.stringify() for GraphQL. It transforms a plain JavaScript object that looks like to a GraphQL into an actual GraphQL string.
+Think of `compileGraphQL` as a JSON.stringify() for GraphQL. It transforms a plain JavaScript object that looks like to a GraphQL into an actual GraphQL string.
 
-While at runtime `compileQuery` returns an ordinary string, at the TypeScript level its return type is a special string subtype named `GraphQLString`. `GraphQLString`, in addition to all the string properties, has one useful property embedded: the `Result` for the compiled query. You can extract the `Result` by using [the infer keyword in a conditional type](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#inferring-within-conditional-types):
+While at runtime `compileGraphQL` returns an ordinary string, at the TypeScript level its return type is a special string subtype named `GraphQLString`. `GraphQLString`, in addition to all the string properties, has one useful property embedded: the `Result` for the compiled query. You can extract the `Result` by using [the infer keyword in a conditional type](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#inferring-within-conditional-types):
 
 ```ts
-type MyResult = typeof compiled extends GraphQLString<infer T, never> ? TResult : never;
+type MyResult = typeof compiled__v1 extends GraphQLString<infer TResult, never> ? TResult : never;
 ```
 
-Because `graphql` is just a helper for type checking, you can skip calling it and define your query inline in `compileQuery`:
+Because `graphql` is just a helper for type checking, you can skip calling it and define your query inline in `compileGraphQL`:
 
 ```ts
-import { compileQuery } from './yourSchema';
+import { compileGraphQL } from './yourSchema';
 
-const compiled = compileQuery(null)({
+const compiled = compileGraphQL('query')({
   user: userFragment,
   posts: [{ author: 'me' }, postFragment],
 });
@@ -180,7 +187,7 @@ const compiled = compileQuery(null)({
 That's all for the basics. Note that `gql-in-ts` is agnostic of the transport layer: it's your responsibility to actually send a request to your backend server. That said, most GraphQL endpoints are [served over HTTP](https://graphql.org/learn/serving-over-http/), so let me include an example demonstrating how to send a typed GraphQL query using `fetch`:
 
 ```ts
-const makeGraphqlRequest = async <TResult>(
+const makeGraphQLRequest = async <TResult>(
   compiled: GraphQLString<TResult, never>,
 ): Promise<TResult> => {
   const response = await fetch('http://example.com/graphql', {
@@ -194,12 +201,6 @@ const makeGraphqlRequest = async <TResult>(
   const responseData = (await response.json()).data;
   return responseData;
 };
-```
-
-Putting it altogether, the code looks like:
-
-```
-
 ```
 
 ## Using aliases
@@ -250,7 +251,7 @@ As in the first example, `graphql` returns the last argument, which is a callbac
 
 ```
 
-When compiling a query with variables, pass the definitions of the variables and a callback to `compileQuery`, as you would do with `graphql`:
+When compiling a query with variables, pass the definitions of the variables and a callback to `compileGraphQL`, as you would do with `graphql`:
 
 ```ts
 
