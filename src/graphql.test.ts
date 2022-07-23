@@ -39,13 +39,15 @@ describe('Selection', () => {
   });
   it('constrains arguments to match the schema', () => {
     expectType<
-      Exclude<Selection<Mutation>['post'], undefined>['0'],
+      Exclude<Selection<Mutation>['bulkMutatePosts'], undefined>['0'],
       To.BeAssignableTo<{
-        input: LiteralOrVariable<{
-          id?: LiteralOrVariable<number | null>;
-          title: LiteralOrVariable<string>;
-          content: LiteralOrVariable<string>;
-        }>;
+        inputs: LiteralOrVariable<
+          {
+            id?: LiteralOrVariable<number | null>;
+            title: LiteralOrVariable<string>;
+            content: LiteralOrVariable<string>;
+          }[]
+        >;
       }>
     >();
   });
@@ -58,7 +60,7 @@ describe('Result', () => {
         username: true,
         nickname: true,
       },
-      'posts as myPosts': [{ author: 'me' }, { title: true, content: [{ length: 300 }, true] }],
+      'posts as myPosts': [{ author: 'me' }, { title: true, content: [{ maxLength: 300 }, true] }],
     });
     expectType<
       Result<typeof typedQuery>,
@@ -146,6 +148,14 @@ describe('Result', () => {
 });
 
 describe('compileSelection', () => {
+  const processCompiled = <TResult, TVariableValues>(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _: {
+      compiled: GraphQLString<TResult, TVariableValues>;
+      variables: TVariableValues;
+    },
+  ): TResult => ({} as TResult);
+
   it('can compile a basic query', () => {
     expect(
       compileQuery(null)({
@@ -153,7 +163,10 @@ describe('compileSelection', () => {
           username: true,
           nickname: true,
         },
-        'posts as myPosts': [{ author: 'me' }, { title: true, content: [{ length: 300 }, true] }],
+        'posts as myPosts': [
+          { author: 'me' },
+          { title: true, content: [{ maxLength: 300 }, true] },
+        ],
       }),
     ).toEqual(
       `
@@ -164,7 +177,7 @@ query {
   }
   myPosts: posts(author: "me") {
     title
-    content(length: 300)
+    content(maxLength: 300)
   }
 }
     `.trim(),
@@ -176,7 +189,7 @@ query {
         '...': {
           '...': {
             posts: {
-              'content as shortContent': [{ length: 100 }, true],
+              'content as shortContent': [{ maxLength: 100 }, true],
               '... as ...1': { title: true },
             },
           },
@@ -189,7 +202,7 @@ query {
       `
 query {
   posts {
-    shortContent: content(length: 100)
+    shortContent: content(maxLength: 100)
     content
     title
   }
@@ -198,74 +211,83 @@ query {
     );
   });
 
-  it('can compile variables', () => {
-    const query = () => graphql('Mutation')({});
-    const compiled = compileMutation({ foo: '[PostMutationInput]', bar: 'Int!' })(query);
-    expect(compiled).toEqual(
-      `
-mutation($foo: [PostMutationInput], $bar: Int!) {
-
-}
-      `.trim(),
-    );
-    expectType<
-      typeof compiled,
-      To.TakeGraphQLVariableValues<{ foo: [{ title: 'Lorem'; content: 'Ipsum' }]; bar: 1 }>
-    >();
-
-    expectType<
-      typeof compiled,
-      To.TakeGraphQLVariableValues<{ foo: [{ title: 'Lorem'; content: 'Ipsum' }]; bar: 1 }>
-    >();
-
-    expectType<typeof compiled, To.TakeGraphQLVariableValues<{ bar: 1 }>>();
-
-    expectType<
-      // @ts-expect-error: Ensure variable types are type-checked.
-      typeof compiled,
-      To.TakeGraphQLVariableValues<{ foo: [{ title: 'Lorem' }]; bar: 1 }>
-    >();
-
-    expectType<
-      // @ts-expect-error: Ensure variable types are type-checked.
-      typeof compiled,
-      To.TakeGraphQLVariableValues<{ foo: [{ title: 'Lorem'; content: 'Ipsum' }] }>
-    >();
-
-    expectType<
-      // @ts-expect-error: Ensure variable types are type-checked.
-      typeof compiled,
-      To.TakeGraphQLVariableValues<{ foo: [{ title: 'Lorem'; content: 'Ipsum' }]; bar: '1' }>
-    >();
-  });
-  it('can compile a mutation with variables', () => {
-    const compiled = compileMutation({ input: 'PostMutationInput!' })(($) => ({
-      post: [{ input: $.input }, { title: true }],
+  it('can compile a variable of type list', () => {
+    const compiled = compileMutation({ inputs: '[MutatePostInput!]!' })(($) => ({
+      bulkCreatePosts: [{ inputs: $.inputs }, { id: true }],
     }));
     expect(compiled).toEqual(
       `
-mutation($input: PostMutationInput!) {
-  post(input: $input) {
-    title
+mutation($inputs: [MutatePostInput!]!) {
+  bulkCreatePosts(inputs: $inputs) {
+    id
   }
 }
       `.trim(),
     );
-    const processCompiled = <TResult, TVariableValues>(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      _: {
-        compiled: GraphQLString<TResult, TVariableValues>;
-        variables: TVariableValues;
-      },
-    ): TResult => ({} as TResult);
+    expectType<
+      typeof compiled,
+      To.TakeGraphQLVariableValues<{ inputs: [{ title: 'Lorem'; content: 'Ipsum' }] }>
+    >();
+
+    expectType<
+      typeof compiled,
+      To.TakeGraphQLVariableValues<{ inputs: [{ id: 1; title: 'Lorem'; content: 'Ipsum' }] }>
+    >();
+
+    expectType<
+      // @ts-expect-error: Missing a required field "content"
+      typeof compiled,
+      To.TakeGraphQLVariableValues<{ inputs: [{ title: 'Lorem' }] }>
+    >();
+
+    expectType<
+      // @ts-expect-error: Missing a variable "inputs".
+      typeof compiled,
+      To.TakeGraphQLVariableValues<{}>
+    >();
+
+    expectType<
+      // @ts-expect-error: Type of content should be string, but 1 is given.
+      typeof compiled,
+      To.TakeGraphQLVariableValues<{ inputs: [{ title: 'Lorem'; content: 1 }] }>
+    >();
 
     // Ensure types for the variable values and the result are inferred correctly.
     const result = processCompiled({
       compiled,
       variables: {
-        input: { title: 'a', content: 'b' },
+        inputs: [{ title: 'a', content: 'b' }],
       },
     });
-    expectType<typeof result, To.BeAssignableTo<{ post: { title: string } }>>();
+    expectType<typeof result, To.BeAssignableTo<{ bulkCreatePosts: { title: string }[] }>>();
+  });
+  it('can compile a variable of input', () => {
+    const compiled = compileMutation({ input: 'LoginInput!' })(($) => ({
+      login: [{ input: $.input }, { token: true, user: { username: true } }],
+    }));
+    expect(compiled).toEqual(
+      `
+mutation($input: LoginInput!) {
+  login(input: $input) {
+    token
+    user {
+      username
+    }
+  }
+}
+      `.trim(),
+    );
+
+    // Ensure types for the variable values and the result are inferred correctly.
+    const result = processCompiled({
+      compiled,
+      variables: {
+        input: { username: 'alice', password: 'zxcvbn' },
+      },
+    });
+    expectType<
+      typeof result,
+      To.BeAssignableTo<{ login: { token: string; user: { username: string } } }>
+    >();
   });
 });

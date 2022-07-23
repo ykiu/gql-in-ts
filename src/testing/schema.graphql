@@ -5,10 +5,11 @@ schema {
 
 type Query {
   user: User!
-  posts(id_Gt: Int, author: String): [Post!]!
+  posts(author: String): [Post!]!
 }
 
 type User {
+  id: Int!
   username: String!
   nickname: String
 }
@@ -16,14 +17,25 @@ type User {
 type Post {
   id: Int!
   title: String!
-  content(length: Int): String!
+  content(maxLength: Int): String!
+}
+
+input LoginInput {
+  username: String!
+  password: String!
+}
+
+type LoginPayload {
+  token: String!
+  user: User!
 }
 
 type Mutation {
-  post(input: PostMutationInput!): Post!
+  login(input: LoginInput!): LoginPayload!
+  bulkMutatePosts(inputs: [MutatePostInput!]!): [Post!]!
 }
 
-input PostMutationInput {
+input MutatePostInput {
   id: Int
   title: String!
   content: String!

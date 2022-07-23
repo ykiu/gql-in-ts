@@ -1,6 +1,3 @@
-/* eslint-disable no-console */
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable camelcase */
 import { readFile, writeFile } from 'fs/promises';
 import { argv } from 'process';
 

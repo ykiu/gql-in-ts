@@ -14,10 +14,7 @@ export type Query = {
     type: User;
   };
   posts: {
-    arguments: {
-      id_Gt: { type: Nullable<Predicate<number>> };
-      author: { type: Nullable<Predicate<string>> };
-    };
+    arguments: { author: { type: Nullable<Predicate<string>> } };
     type: List<Post>;
   };
   '...': {
@@ -26,6 +23,10 @@ export type Query = {
   };
 };
 export type User = {
+  id: {
+    arguments: {};
+    type: Predicate<number>;
+  };
   username: {
     arguments: {};
     type: Predicate<string>;
@@ -49,7 +50,7 @@ export type Post = {
     type: Predicate<string>;
   };
   content: {
-    arguments: { length: { type: Nullable<Predicate<number>> } };
+    arguments: { maxLength: { type: Nullable<Predicate<number>> } };
     type: Predicate<string>;
   };
   '...': {
@@ -57,17 +58,39 @@ export type Post = {
     type: Post;
   };
 };
+export type LoginInput = {
+  username: { type: Predicate<string> };
+  password: { type: Predicate<string> };
+};
+export type LoginPayload = {
+  token: {
+    arguments: {};
+    type: Predicate<string>;
+  };
+  user: {
+    arguments: {};
+    type: User;
+  };
+  '...': {
+    arguments: {};
+    type: LoginPayload;
+  };
+};
 export type Mutation = {
-  post: {
-    arguments: { input: { type: PostMutationInput } };
-    type: Post;
+  login: {
+    arguments: { input: { type: LoginInput } };
+    type: LoginPayload;
+  };
+  bulkMutatePosts: {
+    arguments: { inputs: { type: List<MutatePostInput> } };
+    type: List<Post>;
   };
   '...': {
     arguments: {};
     type: Mutation;
   };
 };
-export type PostMutationInput = {
+export type MutatePostInput = {
   id: { type: Nullable<Predicate<number>> };
   title: { type: Predicate<string> };
   content: { type: Predicate<string> };
@@ -76,6 +99,7 @@ type ObjectTypeNamespace = {
   Query: Query;
   User: User;
   Post: Post;
+  LoginPayload: LoginPayload;
   Mutation: Mutation;
 };
 export type InputTypeNamespace = {
@@ -84,7 +108,8 @@ export type InputTypeNamespace = {
   String: Predicate<string>;
   Boolean: Predicate<boolean>;
   ID: Predicate<string>;
-  PostMutationInput: PostMutationInput;
+  LoginInput: LoginInput;
+  MutatePostInput: MutatePostInput;
 };
 export const graphql = makeGraphql<ObjectTypeNamespace, InputTypeNamespace>();
 export const compileQuery = makeCompileSelection<InputTypeNamespace, Query>('query');
