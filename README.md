@@ -191,8 +191,9 @@ const makeGraphQLRequest = async <TResult>(
     method: 'POST',
     body: JSON.stringify({ query: compiled }),
     headers: {
+      'content-type': 'application/json',
       // If your endpoint requires authorization, comment out the code below.
-      // Authorization: '...'
+      // authorization: '...'
     },
   });
   const responseData = (await response.json()).data;
