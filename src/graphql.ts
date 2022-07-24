@@ -580,3 +580,8 @@ export const makeGraphql = <
   }
   return fn;
 };
+
+export const makeDefineVariables =
+  <TInputTypeNamespace extends InputTypeNamespace>() =>
+  <TVariables extends VariableDefinitions<TInputTypeNamespace>>(variables: TVariables) =>
+    variables;

@@ -168,7 +168,7 @@ const buildInputTypeByName = (node: DocumentNode) => {
 
 const buildHeader = (params: {
   importPath: string;
-}) => `// This file is auto-generated with compileGraphqlSchema.ts.
+}) => `// This file is auto-generated with gql-in-ts
 
 import {
   List,
@@ -176,6 +176,7 @@ import {
   Predicate,
   makeGraphql,
   makeCompileGraphQL,
+  makeDefineVariables,
 } from '${params.importPath}';`;
 
 const buildFooter = (params: {
@@ -183,6 +184,7 @@ const buildFooter = (params: {
 }) => `export const graphql = makeGraphql<ObjectTypeNamespace, InputTypeNamespace>();
 export const compileGraphQL = makeCompileGraphQL<InputTypeNamespace, Schema>();
 export type { Result, Selection, GraphQLString } from '${params.importPath}';
+export const defineVariables = makeDefineVariables<InputTypeNamespace>();
 `;
 
 const compile = (source: string, params: { importPath: string }) => {
@@ -215,7 +217,7 @@ const parseArgs = (args: string[]) => {
 
   let sourcePath = '';
   let destPath = '';
-  let importPath = './lib/graphql';
+  let importPath = 'gql-in-ts';
 
   const positionalArguments: string[] = [];
 
