@@ -1,2 +1,1 @@
-export * from './graphql';
-export * from './compileGraphqlSchema';
+export * from './graphql.js';
