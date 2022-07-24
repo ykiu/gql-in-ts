@@ -48,13 +48,6 @@ With `gql-in-ts`, you run code generation _ideally only once_ to transform a Gra
 
 This approach requires no changes to your development setup. If you're using TypeScript, you are ready to go.
 
-## Features
-
-- Light weight
-  - The core `gql-in-ts` library and the generated code is \_\_\_ kb gzipped after TypeScript transpilation. The size of the generated code remains constant regardless of the size of the schema.
-- Framework agnostic
-  - it is even agnostic of browser APIs like fetch(). You can use it in literally any JavaScript runtime.
-
 ## Getting started
 
 Currently TypeScript 4.4 thru 4.7 is supported (4.8 is not supported yet).
@@ -212,7 +205,11 @@ const makeGraphQLRequest = async <TResult>(
 `gql-in-ts` supports aliases via special keys with the pattern "[original name] as [alias]":
 
 ```ts
-
+const postFragment = graphql('Post')({
+  id: true,
+  'content as longContent': [{ maxLength: 4000 }, true],
+  'content as shortContent': [{ maxLength: 40 }, true],
+});
 ```
 
 This is made possible thanks to [template literal types](https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html) introduced in TypeScript 4.1.
@@ -376,4 +373,4 @@ At the moment `gql-in-ts` has the following limitations:
 
 ## Related works
 
-There are several other solutions that employs a similar approach. [GraphQL Zeus](https://github.com/graphql-editor/graphql-zeus) and [genql](https://github.com/remorses/genql) are especially similar to this library in how they use TypeScript to precisely type GraphQL response data. If you are interested in this project you should definitely check them as well.
+There are several other solutions that employ a similar approach. [GraphQL Zeus](https://github.com/graphql-editor/graphql-zeus) and [genql](https://github.com/remorses/genql) are especially similar to this library in how they use TypeScript to precisely type GraphQL response data. If you are interested in this project you should definitely check them as well.

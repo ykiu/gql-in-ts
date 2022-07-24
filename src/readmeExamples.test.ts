@@ -80,6 +80,11 @@ test('', () => {
     return responseData;
   };
 
+  const postFragment__v2 = graphql('Post')({
+    id: true,
+    'content as longContent': [{ maxLength: 4000 }, true],
+    'content as shortContent': [{ maxLength: 40 }, true],
+  });
   const postDetailFragment = graphql('Post')({
     id: true,
     content: true,
@@ -129,7 +134,7 @@ test('', () => {
   const userFragment__v2 = graphql('User', { avatarSize: 'Int!' })(($) => ({
     avatar: [{ width: $.avatarSize, height: $.avatarSize }, true],
   }));
-  const postFragment__v2 = graphql('Post', { avatarSize: 'Int!' })(($) => ({
+  const postFragment__v3 = graphql('Post', { avatarSize: 'Int!' })(($) => ({
     id: true,
     author: {
       id: true,
@@ -137,7 +142,7 @@ test('', () => {
     },
   }));
   const compiled__v4 = compileGraphQL('query', { avatarSize: 'Int!' })(($) => ({
-    posts: postFragment__v2({ avatarSize: $.avatarSize }),
+    posts: postFragment__v3({ avatarSize: $.avatarSize }),
   }));
   expect(compiled__v4).toEqual(
     `query($avatarSize: Int!) {
