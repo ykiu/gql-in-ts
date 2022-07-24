@@ -55,7 +55,7 @@ Currently TypeScript 4.4 thru 4.7 is supported (4.8 is not supported yet).
 Install the library:
 
 ```bash
-npm i https://github.com/ykiu/gql-in-ts/releases/download/nightly/gql-in-ts-0.1.0.tgz
+npm i https://github.com/ykiu/gql-in-ts/releases/download/v0.1.2/gql-in-ts-0.1.2.tgz
 ```
 
 Generate TypeScript code from your schema:
