@@ -12,6 +12,7 @@ type User {
   id: Int!
   username: String!
   nickname: String
+  avatar(width: Int, height: Int): String
 }
 
 enum PostStatus {
@@ -22,6 +23,7 @@ enum PostStatus {
 
 type Post {
   id: Int!
+  author: User!
   title: String!
   content(maxLength: Int): String!
   status: PostStatus!

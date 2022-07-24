@@ -29,6 +29,13 @@ export type User = {
     arguments: {};
     type: Nullable<Predicate<string>>;
   };
+  avatar: {
+    arguments: {
+      width: { type: Nullable<Predicate<number>> };
+      height: { type: Nullable<Predicate<number>> };
+    };
+    type: Nullable<Predicate<string>>;
+  };
   '...': {
     arguments: {};
     type: User;
@@ -40,6 +47,10 @@ export type Post = {
   id: {
     arguments: {};
     type: Predicate<number>;
+  };
+  author: {
+    arguments: {};
+    type: User;
   };
   title: {
     arguments: {};

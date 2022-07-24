@@ -414,7 +414,7 @@ export const mergeSelections = <
     const [args2, subSelection2] = normalizeEntry(entry1);
     if (!deepEqual(args1, args2))
       throw new Error(
-        `Cannot merge selections. Saw conflicting arguments: ${JSON.stringify(
+        `Cannot merge fragments. Saw conflicting arguments: ${JSON.stringify(
           args1,
         )} != ${JSON.stringify(args2)}`,
       );
@@ -427,7 +427,7 @@ export const mergeSelections = <
       return;
     }
     throw new Error(
-      `Cannot merge selections of different types: ${JSON.stringify(args1)} and ${JSON.stringify(
+      `Cannot merge fragments of different types: ${JSON.stringify(args1)} and ${JSON.stringify(
         args2,
       )}`,
     );

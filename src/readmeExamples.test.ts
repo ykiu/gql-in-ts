@@ -79,4 +79,75 @@ test('', () => {
     const responseData = (await response.json()).data;
     return responseData;
   };
+
+  const postDetailFragment = graphql('Post')({
+    id: true,
+    content: true,
+    author: {
+      id: true,
+      username: true,
+      avatar: [{ width: 128, height: 128 }, true],
+    },
+  });
+  const postSummaryFragment = graphql('Post')({
+    id: true,
+    'content as shortContent': [{ maxLength: 40 }, true],
+    author: {
+      nickname: true,
+      'avatar as smallAvatar': [{ width: 32, height: 32 }, true],
+    },
+  });
+  const query__v3 = graphql('Query')({
+    posts: {
+      '...': postDetailFragment,
+      author: { nickname: true },
+    },
+  });
+  const query__v4 = graphql('Query')({
+    posts: {
+      '... as a': postDetailFragment,
+      '... as b': postSummaryFragment,
+    },
+  });
+  const compiled__v3 = compileGraphQL('query')(query__v4);
+  expect(compiled__v3).toEqual(
+    `query {
+  posts {
+    id
+    content
+    author {
+      nickname
+      smallAvatar: avatar(width: 32, height: 32)
+      id
+      username
+      avatar(width: 128, height: 128)
+    }
+    shortContent: content(maxLength: 40)
+  }
+}`,
+  );
+  const userFragment__v2 = graphql('User', { avatarSize: 'Int!' })(($) => ({
+    avatar: [{ width: $.avatarSize, height: $.avatarSize }, true],
+  }));
+  const postFragment__v2 = graphql('Post', { avatarSize: 'Int!' })(($) => ({
+    id: true,
+    author: {
+      id: true,
+      '...': userFragment__v2({ avatarSize: $.avatarSize }),
+    },
+  }));
+  const compiled__v4 = compileGraphQL('query', { avatarSize: 'Int!' })(($) => ({
+    posts: postFragment__v2({ avatarSize: $.avatarSize }),
+  }));
+  expect(compiled__v4).toEqual(
+    `query($avatarSize: Int!) {
+  posts {
+    id
+    author {
+      id
+      avatar(width: $avatarSize, height: $avatarSize)
+    }
+  }
+}`,
+  );
 });

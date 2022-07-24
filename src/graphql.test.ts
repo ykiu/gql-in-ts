@@ -150,7 +150,7 @@ describe('Result', () => {
   });
 });
 
-describe('compileSelection', () => {
+describe('compileGraphQL', () => {
   const processCompiled = <TResult, TVariableValues>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _: {
@@ -212,6 +212,18 @@ query {
 }
     `.trim(),
     );
+  });
+  it('throws an Error if it got fragments with conflicting arguments', () => {
+    expect(() => {
+      compileGraphQL('query')({
+        '... as a': {
+          posts: { content: [{ maxLength: 100 }, true] },
+        },
+        '... as b': {
+          posts: { content: [{ maxLength: 200 }, true] },
+        },
+      });
+    }).toThrowError('Cannot merge fragments. Saw conflicting arguments');
   });
 
   it('can compile a variable of type list', () => {
