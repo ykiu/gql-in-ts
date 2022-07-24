@@ -57,6 +57,8 @@ This approach requires no changes to your development setup. If you're using Typ
 
 ## Getting started
 
+Currently TypeScript 4.4 thru 4.7 is supported (4.8 is not supported yet).
+
 Install the library:
 
 ```bash
