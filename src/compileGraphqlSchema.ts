@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { readFile, writeFile } from 'fs/promises';
 import { argv } from 'process';
 
