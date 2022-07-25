@@ -228,12 +228,12 @@ query {
 
   it('can compile a variable of type list', () => {
     const compiled = compileGraphQL('mutation', { inputs: '[MutatePostInput!]!' })(($) => ({
-      bulkCreatePosts: [{ inputs: $.inputs }, { id: true }],
+      bulkMutatePosts: [{ inputs: $.inputs }, { id: true }],
     }));
     expect(compiled).toEqual(
       `
 mutation($inputs: [MutatePostInput!]!) {
-  bulkCreatePosts(inputs: $inputs) {
+  bulkMutatePosts(inputs: $inputs) {
     id
   }
 }
@@ -274,7 +274,7 @@ mutation($inputs: [MutatePostInput!]!) {
         inputs: [{ title: 'a', content: 'b' }],
       },
     });
-    expectType<typeof result, To.BeAssignableTo<{ bulkCreatePosts: { title: string }[] }>>();
+    expectType<typeof result, To.BeAssignableTo<{ bulkMutatePosts: { id: number }[] }>>();
   });
   it('can compile a variable of input', () => {
     const compiled = compileGraphQL('mutation', { input: 'LoginInput!' })(($) => ({

@@ -200,7 +200,9 @@ type ResultOrNever<
   TSelection, // intentionally no constraint, because TS cannot figure out
   // RecursivelyMergeSpreads<Selection<T>> is a Selection<T>
 > = TSelection extends Selection<TOutputObjectType>
-  ? ResultForOutputObjectType<TOutputObjectType, TSelection>
+  ? ResultForOutputObjectType<TOutputObjectType, TSelection> extends infer T
+    ? { [K in keyof T]: T[K] } // Force TypeScript to evaluate the properties
+    : never
   : {
       [k in ERROR_FAILED_OBTAIN_TYPE_FROM_SELECTION]: TSelection;
     };
@@ -254,8 +256,9 @@ export type RecursivelyMergeSpreads<TSelection extends Selection<OutputObjectTyp
  * { a: [{}, true], '...': [{}, { b: [{}, true], '...': [{}, { c: [{}, true] }] }] }
  * to { a: [{}, true], b: [{}, true], '...': [{}, { c: [{}, true] }] }
  */
-type MergeSpreads<T> = Omit<T, SpreadableKey> &
-  UnionToIntersection<ValueOf<ValueOf<T, SpreadableKey>, 1>>;
+type MergeSpreads<T> = {
+  [TKey in keyof T as T extends SpreadableKey ? never : TKey]: T[TKey];
+} & UnionToIntersection<ValueOf<ValueOf<T, SpreadableKey>, 1>>;
 
 type ValueOf<TSrc, TKey extends string | number | symbol> = TSrc extends {
   [k in TKey]: infer TValue;
@@ -316,7 +319,9 @@ type ResultType<
     : never
   : TInputType extends OutputObjectType
   ? TSelectionType extends Selection<TInputType>
-    ? ResultForOutputObjectType<TInputType, TSelectionType> // Object
+    ? ResultForOutputObjectType<TInputType, TSelectionType> extends infer T // Object
+      ? { [K in keyof T]: T[K] } // Force TypeScript to evaluate the properties
+      : never
     : never
   : TInputType extends List<infer TWrapped>
   ? ResultType<TWrapped, TSelectionType>[] // Array of another type
