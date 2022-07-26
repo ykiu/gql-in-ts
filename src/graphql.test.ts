@@ -73,6 +73,22 @@ describe('Result', () => {
       }>
     >();
   });
+  it('infers the response type of a callable query', () => {
+    const typedQuery = graphql(
+      'Query',
+      {},
+    )(() => ({
+      user: {
+        username: true,
+      },
+    }));
+    expectType<
+      Result<typeof typedQuery>,
+      To.BeAssignableTo<{
+        user: { username: string };
+      }>
+    >();
+  });
   it('merges fragment spreads', () => {
     const typedQuery = graphql('Query')({
       user: {

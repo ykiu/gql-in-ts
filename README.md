@@ -50,7 +50,7 @@ This approach requires no changes to your development setup. If you're using Typ
 
 ## Getting started
 
-Currently TypeScript 4.4 thru 4.7 is supported (4.8 is not supported yet).
+Currently TypeScript 4.4 thru 4.8 is supported.
 
 Install the library:
 
@@ -61,7 +61,7 @@ npm i https://github.com/ykiu/gql-in-ts/releases/download/v0.1.2/gql-in-ts-0.1.2
 Generate TypeScript code from your schema:
 
 ```bash
-npx compileGraphqlSchema yourSchema.graphql yourSchema.ts
+npx gql-in-ts yourSchema.graphql yourSchema.ts
 ```
 
 Now you are ready to get started.

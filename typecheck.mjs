@@ -4,8 +4,8 @@
 import ts4_4 from 'ts4.4';
 import ts4_5 from 'ts4.5';
 import ts4_6 from 'ts4.6';
-import ts4_7 from 'typescript';
-// import ts4_8 from 'ts4.8';
+import ts4_7 from 'ts4.7';
+import ts4_8 from 'ts4.8';
 import * as path from 'path';
 // import tsconfig from './tsconfig.json' assert { type: 'json' };
 import { readFileSync } from 'fs';
@@ -24,7 +24,7 @@ const diagnosticsCount = [
   ts4_5,
   ts4_6,
   ts4_7,
-  // ts4_8,
+  ts4_8,
 ].map((ts) => {
   const readConfigResult = ts.readConfigFile(CONFIG_FILE_PATH, readFile);
   if (readConfigResult.error) {

@@ -187,13 +187,17 @@ type SelectionType<TOutputType extends OutputType> = TOutputType extends OutputO
 // ----------------------------------------
 
 export type Result<
-  TSelectionWrapper extends GetterOrLiteral<Selection<OutputObjectType>>,
+  TSelectionWrapper extends MaybeCallableSelection<Selection<OutputObjectType>>,
   TOutputObjectType extends OutputObjectType = never,
-> = TSelectionWrapper extends GetterOrLiteral<infer TSelection>
+> = TSelectionWrapper extends MaybeCallableSelection<infer TSelection>
   ? TSelectionWrapper extends HasOutputObjectType<infer InferredOutputObjectType>
     ? ResultOrNever<InferredOutputObjectType, RecursivelyMergeSpreads<TSelection>>
     : ResultOrNever<TOutputObjectType, RecursivelyMergeSpreads<TSelection>>
   : never;
+
+type MaybeCallableSelection<TSelection extends Selection<OutputObjectType>> =
+  | TSelection
+  | (() => TSelection);
 
 type ResultOrNever<
   TOutputObjectType extends OutputObjectType,
@@ -214,8 +218,6 @@ type HasOutputObjectType<TOutputObjectType extends OutputObjectType = OutputObje
   __type?: TOutputObjectType;
 };
 
-type GetterOrLiteral<T> = T | ((...args: any) => T);
-
 type ResultForOutputObjectType<
   TOutputObjectType extends OutputObjectType,
   TSelection extends Selection<TOutputObjectType>,
@@ -223,9 +225,9 @@ type ResultForOutputObjectType<
   [TKey in keyof TSelection as TKey extends AliasKey<string, infer TAlias>
     ? TAlias
     : TKey]: TKey extends AliasKey<infer TSchemaKey>
-    ? ResultEntry<TOutputObjectType[TSchemaKey], TSelection[TKey]> // Selection with alias
+    ? ResultEntry<TOutputObjectType[TSchemaKey], NonNullable<TSelection[TKey]>> // Selection with alias
     : TKey extends keyof TOutputObjectType
-    ? ResultEntry<TOutputObjectType[TKey], TSelection[TKey]> // Selection without alias
+    ? ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>> // Selection without alias
     : never;
 };
 
