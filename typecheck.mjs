@@ -1,13 +1,9 @@
-// import ts4_1 from 'ts4.1';
-// import ts4_2 from 'ts4.2';
-// import ts4_3 from 'ts4.3';
 import ts4_4 from 'ts4.4';
 import ts4_5 from 'ts4.5';
 import ts4_6 from 'ts4.6';
 import ts4_7 from 'ts4.7';
 import ts4_8 from 'ts4.8';
 import * as path from 'path';
-// import tsconfig from './tsconfig.json' assert { type: 'json' };
 import { readFileSync } from 'fs';
 
 const CONFIG_FILE_PATH = './tsconfig.json';
@@ -17,9 +13,6 @@ const readFile = (path) => readFileSync(path, { encoding: 'utf-8' });
 
 // prettier-ignore
 const diagnosticsCount = [
-  // ts4_1,
-  // ts4_2,
-  // ts4_3,
   ts4_4,
   ts4_5,
   ts4_6,
