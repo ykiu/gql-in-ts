@@ -5,7 +5,6 @@
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "bin": "dist/compileGraphqlSchema.js",
-  "type": "commonjs",
   "types": "dist/types/index.d.ts",
   "devDependencies": {
     "@types/node": "^18.0.6",
