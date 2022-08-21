@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "outDir": "dist/esm",
+  },
+  "exclude": [
+    "**/compileGraphqlSchema.ts",
+    "**/*.test.ts",
+    "**/testing"
+  ]
+}

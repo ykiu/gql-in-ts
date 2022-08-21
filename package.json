@@ -2,10 +2,11 @@
   "name": "gql-in-ts",
   "version": "0.1.2",
   "description": "A type-safe way to write GraphQL.",
-  "main": "dist/index.js",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
   "bin": "dist/compileGraphqlSchema.js",
-  "type": "module",
-  "types": "dist/index.d.ts",
+  "type": "commonjs",
+  "types": "dist/types/index.d.ts",
   "devDependencies": {
     "@types/node": "^18.0.6",
     "@typescript-eslint/eslint-plugin": "^5.30.6",
@@ -30,7 +31,7 @@
     "check:prettier": "prettier ./src --check",
     "check:eslint": "eslint ./src",
     "schema": "node node_modules/typescript/bin/tsc -p tsconfig.cli.json && node ./dist/compileGraphqlSchema.js ./src/testing/schema.graphql ./src/testing/schema.ts --import-path \"../graphql\" && eslint ./src/testing/schema.ts --fix &&  prettier ./src/testing/schema.ts --write",
-    "build": "rimraf dist && node node_modules/typescript/bin/tsc",
+    "build": "rimraf dist && node node_modules/typescript/bin/tsc -p tsconfig.cjs.json && node node_modules/typescript/bin/tsc -p tsconfig.esm.json && node node_modules/typescript/bin/tsc -p tsconfig.cli.json",
     "test": "vitest"
   },
   "author": "ykiu",

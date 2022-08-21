@@ -1,17 +1,15 @@
 {
   "compilerOptions": {
     "target": "ES5",
-    "module": "ESNext",
     "lib": [
-      "ES5",
+      "ES2021",
     ],
+    "types": [],
     "moduleResolution": "Node",
     "strict": true,
     "sourceMap": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "dist",
-    "declaration": true,
     "downlevelIteration": true
   },
   "exclude": [
