@@ -197,7 +197,7 @@ export type Result<
 
 type MaybeCallableSelection<TSelection extends Selection<OutputObjectType>> =
   | TSelection
-  | (() => TSelection);
+  | (($: never) => TSelection);
 
 type ResultOrNever<
   TOutputObjectType extends OutputObjectType,

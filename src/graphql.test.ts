@@ -74,18 +74,18 @@ describe('Result', () => {
     >();
   });
   it('infers the response type of a callable query', () => {
-    const typedQuery = graphql(
-      'Query',
-      {},
-    )(() => ({
-      user: {
-        username: true,
-      },
+    const typedQuery = graphql('Query', { author: 'String' })(($) => ({
+      posts: [
+        { author: $.author },
+        {
+          title: true,
+        },
+      ],
     }));
     expectType<
       Result<typeof typedQuery>,
       To.BeAssignableTo<{
-        user: { username: string };
+        posts: { title: string }[];
       }>
     >();
   });
