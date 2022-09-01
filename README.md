@@ -1,6 +1,6 @@
 # gql-in-ts
 
-A type-safe way to write GraphQL. Express your query as a plain JavaScript object and get it typed with the power of TypeScript.
+A type-safe way to write GraphQL. Express queries as plain JavaScript objects and get types inferred by TypeScript.
 
 ```ts
 const query = graphql('Query')({
@@ -18,9 +18,9 @@ const query = graphql('Query')({
 });
 ```
 
-```graphql
-# Equivalent GraphQL query:
+Equivalent GraphQL query:
 
+```graphql
 query {
   user {
     username
@@ -33,20 +33,32 @@ query {
 }
 ```
 
+## Features
+
+### Minimum setup
+
+**Start using GraphQL without bothering with development environment**. With `gql-in-ts`, queries are 100% pure TypeScript. If your editor understands TypeScript, you'll get realtime type checking and autocompletion for `gql-in-ts` queries without any plugins.
+
+### Seamless development experience
+
+**Update queries without running code generation**. Changes in queries automatically cascade to the relevant types.
+
+### Framework agnostic
+
+**Use with the tooling of your choice**. The sole mission of `gql-in-ts` at runtime is to transform JavaScript objects to GraphQL query strings (similar to `JSON.stringify()`). `gql-in-ts` is thin by design. It does not even depend on browser APIs and runs in any JavaScript environment.
+
 ## Motivation
 
-Probably the most widespread way to use GraphQL in TypeScript is to write GraphQL as a string literal and use code generation to obtain the type of the response for it. While this allows for a variety of compile-time validations and optimizations, it comes with several pain points, namely:
+Arguably the most widely adopted technique of using GraphQL in TypeScript would be to use code generation to obtain TypeScript types for the response data for GraphQL queries. This approach, while it works, comes with some pain points, like:
 
-- You have to run code generation every time you change your query.
-- You get poor support from the text editor while editing string literals. To enjoy features like syntax highlighting, auto-completion and anything you'd expect from a modern editor, you'll have to install and set up a plugin dedicated for GraphQL, which adds to the complexity of your development environment.
+- You'll have to run code generation every time you change queries.
+- By default you'll get poor support from the text editor while editing GraphQL. You have to setup a plugin for GraphQL to enable features like syntax highlighting or auto-completion.
 
-`gql-in-ts` solves these problems in a completely different approach: express queries as plain JavaScript objects.
+`gql-in-ts` bypasses these problems in a simple way: express queries as plain JavaScript objects.
 
-With `gql-in-ts`, you run code generation _ideally only once_ to transform a GraphQL schema into a TypeScript-friendly format. Since schemas tend to change less often than queries, you would have to run the code generation less frequently than in the case of the conventional approach.
+With `gql-in-ts`, you run code generation _only when the schema changes_. Since schemas tend to change less often than queries, you'll need to run code generation less frequently than in the case of the conventional aproach.
 
-`gql-in-ts` ships with a carefully designed type definition, allowing TypeScript to provide auto-completion and to infer the type of the data that would be returned for the query.
-
-This approach requires no changes to your development setup. If you're using TypeScript, you are ready to go.
+In `gql-in-ts`, your queries are plain TypeScript code. You'll get support from your text editor without extra plugins.
 
 ## Getting started
 
@@ -55,7 +67,7 @@ Currently TypeScript 4.4 thru 4.8 is supported.
 Install the library:
 
 ```bash
-npm i https://github.com/ykiu/gql-in-ts/releases/download/v0.1.2/gql-in-ts-0.1.2.tgz
+npm i https://github.com/ykiu/gql-in-ts/releases/download/v0.1.3/gql-in-ts-0.1.3.tgz
 ```
 
 Generate TypeScript code from your schema:
@@ -64,7 +76,7 @@ Generate TypeScript code from your schema:
 npx gql-in-ts yourSchema.graphql yourSchema.ts
 ```
 
-Now you are ready to get started.
+Now you are all set!
 
 ## Core concepts
 
@@ -96,7 +108,7 @@ The `graphql` function, at runtime, returns the last argument unmodified. In fac
 const graphql = () => (arg) => arg;
 ```
 
-The true value of `graphql` lies in its type definition. It constrains its arguments so that it only accepts a valid GraphQL query. If you forgot to provide a required argument for a field, for example, you'll get a TypeScript error. It also serves as a trigger for auto-completion. If you are using an editor that supports TypeScript, you'll get completion for field names.
+The true value of `graphql` lies in its type definition. By wrapping your query with `graphql`, you'll get suppport from TypeScript like completion and type checking.
 
 You can split up a large query into smaller pieces, much like you do with GraphQL fragments:
 
@@ -117,7 +129,7 @@ const query = graphql('Query')({
 
 ### The `Result` type
 
-Now, how would you know the shape of the response that would be returned for the query you wrote? Use the `Result` type for that:
+Now, how would you know the shape of the response that would be returned for the query you wrote? Use the `Result` type:
 
 ```ts
 import { Result } from './yourSchema';
@@ -136,11 +148,11 @@ type QueryResult = Result<typeof query>;
 // }
 ```
 
-**`Result` is the heart and soul of `gql-in-ts`.** It does all the heavy lifting of mapping the shape of the query to the shape of the actual data that would be returned from the GraphQL server. `Result` does this by relying on the TypeScript ability to do complex computations such as [mapping object properties](https://www.typescriptlang.org/docs/handbook/2/mapped-types.html) and [making conditions](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html) as part of type checking.
+**`Result` is the heart and soul of `gql-in-ts`.** It does all the heavy lifting of mapping the shape of the query to the shape of the data that would be returned from the GraphQL server. `Result` does this by relying on the TypeScript ability to do complex computations such as [mapping object properties](https://www.typescriptlang.org/docs/handbook/2/mapped-types.html) and [making conditions](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html) as part of type checking.
 
 ### The `compileGraphQL` function
 
-Finally, it's time to build an actual GraphQL query! Compile the query into string by using `compileGraphQL`:
+Compile the query into string by using `compileGraphQL`:
 
 ```ts
 import { compileGraphQL } from './yourSchema';
@@ -168,7 +180,7 @@ While at runtime `compileGraphQL` returns an ordinary string, at the TypeScript 
 type MyResult = typeof compiled extends GraphQLString<infer TResult, never> ? TResult : never;
 ```
 
-Because `graphql` is just a helper for type checking, you can skip calling it and define your query inline in `compileGraphQL`:
+You can also pass your query directly to `compileGraphQL` instead of using `graphql`.
 
 ```ts
 import { compileGraphQL } from './yourSchema';
@@ -181,7 +193,7 @@ const compiled = compileGraphQL('query')({
 
 ### Making a request
 
-`gql-in-ts` is agnostic of the transport layer: it's your responsibility to actually send a request to your backend server. That said, most GraphQL endpoints are [served over HTTP](https://graphql.org/learn/serving-over-http/), so let me include an example demonstrating how to send a typed GraphQL query using `fetch`:
+`gql-in-ts` is agnostic of the transport layer: it's your responsibility to send requests to your backend server. That said, most GraphQL endpoints are [served over HTTP](https://graphql.org/learn/serving-over-http/), so let me include an example demonstrating how to send a typed GraphQL query using `fetch`:
 
 ```ts
 const makeGraphQLRequest = async <TResult>(
@@ -203,7 +215,7 @@ const makeGraphQLRequest = async <TResult>(
 
 ## Using aliases
 
-`gql-in-ts` supports aliases via special keys with the pattern "[original name] as [alias]":
+`gql-in-ts` supports aliases via special keys with the pattern "\[original name\] as \[alias\]":
 
 ```ts
 const postFragment = graphql('Post')({
@@ -213,7 +225,7 @@ const postFragment = graphql('Post')({
 });
 ```
 
-This is made possible thanks to [template literal types](https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html) introduced in TypeScript 4.1.
+An alias won't compromise the level of type safety because it relies on [template literal types](https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html).
 
 ## Merging fragments
 
@@ -321,7 +333,7 @@ compileGraphQL('query')({
 
 ## Using variables
 
-`gql-in-ts` supports GraphQL variables. Variables allow you to compile a query once and use the same query over and over again with different parameters, minimizing the overhead of compiling.
+`gql-in-ts` supports GraphQL variables. Variables allow to compile a query once and to reuse it over and over again with different parameters, minimizing the overhead of compiling.
 
 To define a fragment with variables, declare the names and the types of the variables and pass a callback to `graphql`. You can reference the variables from within the callback:
 
@@ -331,7 +343,7 @@ const userFragment = graphql('User', { avatarSize: 'Int!' })(($) => ({
 }));
 ```
 
-As in the first example, `graphql` returns the last argument unmodified. In this case, the last argument is a function. Call that function in other places to build a bigger query or fragment:
+As in the first example, `graphql` returns the last argument unmodified. In this case, the last argument is a function. Call it in other queries or fragments:
 
 ```ts
 const postFragment = graphql('Post', { avatarSize: 'Int!' })(($) => ({
@@ -343,7 +355,7 @@ const postFragment = graphql('Post', { avatarSize: 'Int!' })(($) => ({
 }));
 ```
 
-To compile a query with variables, pass the definitions of the variables and a callback to `compileGraphQL` in the same way described for `graphql`:
+Likewise, pass the definitions of variables and a callback to `compileGraphQL` to compile a query with variables:
 
 ```ts
 const compiled = compileGraphQL('query', { avatarSize: 'Int!' })(($) => ({
