@@ -344,6 +344,19 @@ export type GraphQLString<TResult, TVariableValues> = string & {
 // Functions for compiling queries, mutations or subscriptions
 // -----------------------------------------------------------
 
+// An Object.entries() shim
+const objectEntries = <T>(obj: { [k: string]: T } | {}): [string, T][] => {
+  return Object.keys(obj).map((k) => [k, obj[k as keyof typeof obj]]);
+};
+
+// An Object.fromEntries() shim
+const objectFromEntries = <T>(ents: readonly (readonly [string, T])[]): { [k: string]: T } => {
+  return ents.reduce<{ [k: string]: T }>((acc, [k, v]) => {
+    acc[k] = v;
+    return acc;
+  }, {});
+};
+
 const normalizeEntry = <TOutputObjectTypeEntry extends OutputObjectTypeEntry>(
   selectionEntry: SelectionEntry<TOutputObjectTypeEntry>,
 ) => {
@@ -378,7 +391,7 @@ const compileArgument = (
     return `$${name}`;
   }
   if (typeof arg === 'object' && arg != null)
-    return `{${Object.entries(arg)
+    return `{${objectEntries(arg)
       .filter(([, v]) => v != null)
       .map(([k, v]) => `${k}: ${compileArgument(v, nameByVariable)}`)
       .join(', ')}}`;
@@ -406,8 +419,8 @@ export const mergeSelections = <
   selection1: TSelection1,
   selection2: TSelection2,
 ): TSelection1 & TSelection2 => {
-  const destination: any = { ...selection1 };
-  Object.entries(selection2).forEach(([key, entry2]) => {
+  const destination: any = Object.assign({}, selection1);
+  objectEntries(selection2).forEach(([key, entry2]) => {
     const entry1 = selection1[key];
     if (!entry2) {
       destination[key] = entry1;
@@ -443,10 +456,10 @@ export const mergeSelections = <
 };
 
 const resolveSpreads = (selection: any): any => {
-  let selectionWithoutSpreads: any = Object.fromEntries(
-    Object.entries(selection).filter(([k]) => !k.startsWith('...')),
+  let selectionWithoutSpreads: any = objectFromEntries(
+    objectEntries(selection).filter(([k]) => !k.startsWith('...')),
   );
-  const spreads: any[] = Object.entries(selection)
+  const spreads: any[] = objectEntries(selection)
     .filter(([k]) => k.startsWith('...'))
     .map(([, v]) => v);
   spreads.map(resolveSpreads).forEach((s) => {
@@ -467,7 +480,7 @@ const compileSelectionEntry = <TOutputObjectTypeEntry extends OutputObjectTypeEn
   const compiledArguments =
     Object.keys(args).length === 0
       ? ''
-      : `(${Object.entries(args)
+      : `(${objectEntries(args)
           .filter(([, v]) => v != null)
           .map(([k, v]) => `${k}: ${compileArgument(v, nameByVariable)}`)
           .join(', ')})`;
@@ -477,7 +490,7 @@ const compileSelectionEntry = <TOutputObjectTypeEntry extends OutputObjectTypeEn
   }
   return [
     `${indent}${compiledfieldName}${compiledArguments} {`,
-    Object.entries(resolveSpreads(subSelection))
+    objectEntries(resolveSpreads(subSelection))
       .map(([k, v]) => compileSelectionEntry(k, v as any, nameByVariable, indentSize + 2))
       .join('\n'),
     `${indent}}`,
@@ -499,14 +512,14 @@ const constructVariableReferences = <
 >(
   variables: TVariableDefinitions,
 ) => {
-  const variableEntries = Object.entries(variables);
+  const variableEntries = objectEntries(variables);
   const wrappedVariableEntries = variableEntries.map(
     ([k, v]) => [k, constructVariableReference<TInputTypeNamespace, typeof v>(v)] as const,
   );
   const nameByVariable = new Map(wrappedVariableEntries.map(([k, v]) => [v, k]));
 
   return {
-    variableObjects: Object.fromEntries(wrappedVariableEntries) as VariableReferences<
+    variableObjects: objectFromEntries(wrappedVariableEntries) as VariableReferences<
       TInputTypeNamespace,
       TVariableDefinitions
     >,
@@ -535,7 +548,7 @@ export const makeCompileGraphQL = <
         TInputTypeNamespace,
         NonNullable<TVariables>
       >(cleanedVariables);
-      const variableEntries = Object.entries(cleanedVariables);
+      const variableEntries = objectEntries(cleanedVariables);
       const compiledVariableDefinitions = variableEntries.map(([k, v]) => `$${k}: ${v}`).join(', ');
       const compiledVariablesWithParenth =
         compiledVariableDefinitions.length > 0 ? `(${compiledVariableDefinitions})` : '';

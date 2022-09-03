@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES5",
     "lib": [
-      "ES2021",
+      "ES2015",
     ],
     "types": [],
     "moduleResolution": "Node",
@@ -10,7 +10,7 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "downlevelIteration": true
+    "downlevelIteration": false,
   },
   "exclude": [
     "node_modules",
