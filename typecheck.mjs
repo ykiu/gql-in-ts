@@ -6,7 +6,7 @@ import ts4_8 from 'ts4.8';
 import * as path from 'path';
 import { readFileSync } from 'fs';
 
-const CONFIG_FILE_PATH = './tsconfig.json';
+const CONFIG_FILE_PATH = './tsconfig.esm.json';
 
 // https://github.com/Microsoft/TypeScript/issues/6387#issuecomment-169739615
 const readFile = (path) => readFileSync(path, { encoding: 'utf-8' });
