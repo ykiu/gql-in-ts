@@ -67,13 +67,13 @@ Currently TypeScript 4.4 thru 4.8 is supported.
 Install the library:
 
 ```bash
-npm i https://github.com/ykiu/gql-in-ts/releases/download/v0.1.3/gql-in-ts-0.1.3.tgz
+npm i gql-in-ts
 ```
 
 Generate TypeScript code from your schema:
 
 ```bash
-npx gql-in-ts yourSchema.graphql yourSchema.ts
+npx gql-in-ts schema.graphql schema.ts
 ```
 
 Now you are all set!
@@ -85,7 +85,7 @@ Now you are all set!
 The generated module exports a function named `graphql`, which helps to write typed GraphQL queries.
 
 ```ts
-import { graphql } from './yourSchema';
+import { graphql } from './schema';
 
 const query = graphql('Query')({
   user: {
@@ -132,7 +132,7 @@ const query = graphql('Query')({
 Now, how would you know the shape of the response that would be returned for the query you wrote? Use the `Result` type:
 
 ```ts
-import { Result } from './yourSchema';
+import { Result } from './schema';
 
 type QueryResult = Result<typeof query>;
 // QueryResult would be inferred as:
@@ -155,7 +155,7 @@ type QueryResult = Result<typeof query>;
 Compile the query into string by using `compileGraphQL`:
 
 ```ts
-import { compileGraphQL } from './yourSchema';
+import { compileGraphQL } from './schema';
 
 const compiled = compileGraphQL('query')(query);
 expect(compiled).toEqual(
@@ -183,7 +183,7 @@ type MyResult = typeof compiled extends GraphQLString<infer TResult, never> ? TR
 You can also pass your query directly to `compileGraphQL` instead of using `graphql`.
 
 ```ts
-import { compileGraphQL } from './yourSchema';
+import { compileGraphQL } from './schema';
 
 const compiled = compileGraphQL('query')({
   user: userFragment,
