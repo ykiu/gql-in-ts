@@ -36,6 +36,7 @@ jobs:
         with:
           artifacts: '*.tgz'
           token: ${{ secrets.GITHUB_TOKEN }}
-      - run: npm publish
+      - if: github.ref_type == 'tag'
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
