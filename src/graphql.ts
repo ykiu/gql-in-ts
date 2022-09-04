@@ -223,7 +223,9 @@ type ResultForOutputObjectType<
   TSelection extends Selection<TOutputObjectType>,
 > = {
   [TKey in keyof TSelection as TKey extends AliasKey<string, infer TAlias>
-    ? TAlias
+    ? TAlias // Transform "foo as bar" to "bar"
+    : TKey extends '__type'
+    ? never // Remove the property if the key is "__type". The graphql() function adds "__type" to queries to embed schema information.
     : TKey]: TKey extends AliasKey<infer TSchemaKey>
     ? ResultEntry<TOutputObjectType[TSchemaKey], NonNullable<TSelection[TKey]>> // Selection with alias
     : TKey extends keyof TOutputObjectType
