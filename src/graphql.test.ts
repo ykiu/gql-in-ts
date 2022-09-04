@@ -116,8 +116,11 @@ describe('Result', () => {
         ],
       },
     });
+
+    type MergedQuery = RecursivelyMergeSpreads<typeof typedQuery>;
+
     expectType<
-      RecursivelyMergeSpreads<typeof typedQuery>,
+      MergedQuery,
       To.BeAssignableTo<{
         user: Tuple<
           unknown,
@@ -136,8 +139,10 @@ describe('Result', () => {
       }>
     >();
 
+    type Result1 = Result<typeof typedQuery>;
+
     expectType<
-      Result<typeof typedQuery>,
+      Result1,
       To.BeAssignableTo<{
         user: { username: string; nickname: string | null };
         posts: {
@@ -147,15 +152,17 @@ describe('Result', () => {
       }>
     >();
 
+    type Result2 = Result<{
+      __type: Query;
+      posts: {
+        title: true;
+        content: true;
+      };
+      '... as ...1': Selection<Query>;
+    }>;
+
     expectType<
-      Result<{
-        __type: Query;
-        posts: {
-          title: true;
-          content: true;
-        };
-        '... as ...1': Selection<Query>;
-      }>,
+      Result2,
       To.BeAssignableTo<{
         posts: {
           title: string;

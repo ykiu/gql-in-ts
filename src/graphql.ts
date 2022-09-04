@@ -259,7 +259,7 @@ export type RecursivelyMergeSpreads<TSelection extends Selection<OutputObjectTyp
  * to { a: [{}, true], b: [{}, true], '...': [{}, { c: [{}, true] }] }
  */
 type MergeSpreads<T> = {
-  [TKey in keyof T as T extends SpreadableKey ? never : TKey]: T[TKey];
+  [TKey in keyof T as TKey extends SpreadableKey ? never : TKey]: T[TKey];
 } & UnionToIntersection<ValueOf<ValueOf<T, SpreadableKey>, 1>>;
 
 type ValueOf<TSrc, TKey extends string | number | symbol> = TSrc extends {
