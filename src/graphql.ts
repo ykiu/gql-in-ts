@@ -162,6 +162,8 @@ type AliasKey<
 
 type SpreadableKey = '...' | AliasKey<'...'>;
 
+type TypedFragmentKey = `... on ${string}`;
+
 type SelectionEntry<TOutputObjectTypeEntry extends OutputObjectTypeEntry> = SelectionEntryShape<
   InputObjectTypeValue<TOutputObjectTypeEntry['arguments']>,
   SelectionType<TOutputObjectTypeEntry['type']>
@@ -206,20 +208,23 @@ export type Result<
   TOutputObjectType extends OutputObjectType = never,
 > = TSelection extends MaybeCallableSelection<infer TRealSelection>
   ? TSelection extends HasOutputObjectType<infer InferredOutputObjectType>
-    ? ResultOrNever<InferredOutputObjectType, NormalizeSelection<TRealSelection>>
-    : ResultOrNever<TOutputObjectType, NormalizeSelection<TRealSelection>>
+    ? ResultForNormalizedSelection<InferredOutputObjectType, PreprocessSelection<TRealSelection>>
+    : ResultForNormalizedSelection<TOutputObjectType, PreprocessSelection<TRealSelection>>
   : never;
 
-/** A trivial helper for unwrapping getter-style  */
+/** A trivial helper for unwrapping a getter-style selection */
 type MaybeCallableSelection<TSelection extends Selection<OutputObjectType>> =
   | TSelection
   | (($: never) => TSelection);
 
-/** A trivial helper type for narrowing down the type of TSelection.*/
-type ResultOrNever<
+/**
+ * A trivial wrapper around ResultForOutputObjectType that accepts NormalizeSelection<TSelection>.
+ */
+// NormalizeSelection<Selection> is actually a Selection but TS cannot statically determine
+// it is, so use a conditional type to "dynamically" narrow down the type of the selection.
+type ResultForNormalizedSelection<
   TOutputObjectType extends OutputObjectType,
-  TSelection, // intentionally no constraint, because TS cannot figure out
-  // NormalizeSelection<Selection<T>> is a Selection<T>
+  TSelection,
 > = TSelection extends Selection<TOutputObjectType>
   ? ResultForOutputObjectType<TOutputObjectType, TSelection> extends infer T
     ? { [K in keyof T]: T[K] } // Force TypeScript to evaluate the properties
@@ -235,13 +240,11 @@ type HasOutputObjectType<TOutputObjectType extends OutputObjectType = OutputObje
   __type?: TOutputObjectType;
 };
 
-type TypedFragmentKey = `... on ${string}`;
-
 /**
  * Core implementation of result type inference.
  */
-// Iterate over the keys of TSelection and delegate inference of each property to a relevant type.
-// Also handles the type condition of fragments.
+// Iterates over the keys of TSelection and delegate handling of each property to the relevant type.
+// Also handles type condition of fragments.
 type ResultForOutputObjectType<
   TOutputObjectType extends OutputObjectType,
   TSelection extends Selection<TOutputObjectType>,
@@ -250,16 +253,18 @@ type ResultForOutputObjectType<
       [TKey in keyof TSelection as TKey extends AliasKey<string, infer TAlias>
         ? TAlias // Transform "foo as bar" to "bar"
         : TKey extends '__type'
-        ? never // Remove the key if it is "__type". The graphql() function adds "__type" to queries to embed schema information.
-        : TKey extends TypedFragmentKey
-        ? never // Remove the key if it is matches the pattern of fragments with type conditions.
+        ? never // Remove the key if it is "__type". The "__type" key is added by the graphql() function
+        : // so that the Result type can determine the schema type of a query without explicit user input.
+        TKey extends TypedFragmentKey
+        ? never // Remove the key if it matches the pattern of fragment type conditions.
         : TKey]: TKey extends AliasKey<infer TSchemaKey>
         ? ResultEntry<TOutputObjectType[TSchemaKey], NonNullable<TSelection[TKey]>> // Selection with alias
         : TKey extends keyof TOutputObjectType
         ? ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>> // Selection without alias
         : never;
     }
-  // Handle each fragment with type conditions.
+
+  // Handle each type condition.
   | (keyof TSelection extends infer TKey
       ? TKey extends TypedFragmentKey
         ? ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>>
@@ -267,7 +272,7 @@ type ResultForOutputObjectType<
       : never);
 
 /**
- * Normalizes the shape of a selection to simplify subsequent processing.
+ * Preprocesses selections to simplify subsequent processing.
  *
  * Does two things:
  *
@@ -275,11 +280,11 @@ type ResultForOutputObjectType<
  * 2. Recursively merges fragment spreads.
  *
  * @example
- * type T1 = NormalizeSelection<{ a: true, '...': { b: true, '...': { c: true } } }>;
+ * type T1 = PreprocessSelection<{ a: true, '...': { b: true, '...': { c: true } } }>;
  * type T2 = { a: [{}, true], b: [{}, true], c: [{}, true] };
  * // T1 == T2
  */
-export type NormalizeSelection<TSelection extends Selection<OutputObjectType>> = MergeSpreads<{
+export type PreprocessSelection<TSelection extends Selection<OutputObjectType>> = MergeSpreads<{
   [TKey in keyof TSelection]: TSelection[TKey] extends SelectionEntryShape<
     infer TSelectionArgument,
     infer TSubSelection
@@ -288,7 +293,7 @@ export type NormalizeSelection<TSelection extends Selection<OutputObjectType>> =
       ? // The field has a sub-selection.
         // Recurse into the sub-selection and normalize the shape of the field to
         // [arg, sub-selection].
-        { 0: TSelectionArgument; 1: NormalizeSelection<TSubSelection> }
+        { 0: TSelectionArgument; 1: PreprocessSelection<TSubSelection> }
       : // The field does not have a sub-selection.
         // Just normalize its shape to [arg, true].
         { 0: TSelectionArgument; 1: TSubSelection }
@@ -300,7 +305,7 @@ export type NormalizeSelection<TSelection extends Selection<OutputObjectType>> =
 
 /**
  * @example
- * type T1 = MergeSpread<{ a: [{}, true], '...': [{}, { b: [{}, true], '...': [{}, { c: [{}, true] }] }] }>;
+ * type T1 = MergeSpreads<{ a: [{}, true], '...': [{}, { b: [{}, true], '...': [{}, { c: [{}, true] }] }] }>;
  * type T2 = { a: [{}, true], b: [{}, true], '...': [{}, { c: [{}, true] }] };
  * // T1 == T2
  */
@@ -308,6 +313,14 @@ type MergeSpreads<T> = {
   [TKey in keyof T as TKey extends SpreadableKey ? never : TKey]: T[TKey];
 } & UnionToIntersection<ValueOf<ValueOf<T, SpreadableKey>, 1>>;
 
+/**
+ * @example
+ * type T1 = ValueOf<{a: 1, b: 2}, 'a'>;
+ * // T1 == 1;
+ *
+ * type T2 = ValueOf<{a: 1, b: 2}, 'a' | 'b'>;
+ * // T2 == 1 | 2;
+ */
 type ValueOf<TSrc, TKey extends string | number | symbol> = TKey extends infer TKey2
   ? TSrc extends {
       [k in TKey2 & (string | number | symbol)]: infer TValue;
@@ -330,7 +343,7 @@ type ValueOf<TSrc, TKey extends string | number | symbol> = TKey extends infer T
 //
 // The following part:
 //
-// (T extends any ? ((v: T) => void) : never)
+// (T extends unknown ? ((v: T) => void) : never)
 //
 // is a "distributive conditional type". Distributive conditional types are automatically
 // distributed over union types during instantiation.
@@ -353,7 +366,9 @@ type ValueOf<TSrc, TKey extends string | number | symbol> = TKey extends infer T
 // ((v: A) => void | (v: B) => void) extends (v2: infer U) => void ? U : never
 //
 // is inferred as A & B because there're multiple candidates (A and B) for U.
-type UnionToIntersection<T> = (T extends any ? (v: T) => void : never) extends (v2: infer U) => void
+type UnionToIntersection<T> = (T extends unknown ? (v: T) => void : never) extends (
+  v2: infer U,
+) => void
   ? U
   : never;
 

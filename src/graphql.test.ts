@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import { describe, expect, it } from 'vitest';
-import { GraphQLString, LiteralOrVariable, NormalizeSelection, Result, Selection } from './graphql';
+import {
+  GraphQLString,
+  LiteralOrVariable,
+  PreprocessSelection,
+  Result,
+  Selection,
+} from './graphql';
 import { Mutation, Query, graphql, compileGraphQL } from './testing/schema';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -59,8 +65,9 @@ describe('Result', () => {
         { title: true, content: [{ maxLength: 300 }, true], status: true },
       ],
     });
+    type Result1 = Result<typeof typedQuery>;
     expectType<
-      Result<typeof typedQuery>,
+      Result1,
       To.BeAssignableTo<{
         user: { username: string; nickname: string | null };
         myPosts: { title: string; content: string; status: 'DRAFT' | 'PUBLIC' | 'ARCHIVED' }[];
@@ -76,8 +83,9 @@ describe('Result', () => {
         },
       ],
     }));
+    type Result1 = Result<typeof typedQuery>;
     expectType<
-      Result<typeof typedQuery>,
+      Result1,
       To.BeAssignableTo<{
         posts: { title: string }[];
       }>
@@ -111,7 +119,7 @@ describe('Result', () => {
       },
     });
 
-    type MergedQuery = NormalizeSelection<typeof typedQuery>;
+    type MergedQuery = PreprocessSelection<typeof typedQuery>;
 
     expectType<
       MergedQuery,
