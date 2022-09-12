@@ -1,12 +1,6 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import { describe, expect, it } from 'vitest';
-import {
-  GraphQLString,
-  LiteralOrVariable,
-  RecursivelyMergeSpreads,
-  Result,
-  Selection,
-} from './graphql';
+import { GraphQLString, LiteralOrVariable, NormalizeSelection, Result, Selection } from './graphql';
 import { Mutation, Query, graphql, compileGraphQL } from './testing/schema';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -117,7 +111,7 @@ describe('Result', () => {
       },
     });
 
-    type MergedQuery = RecursivelyMergeSpreads<typeof typedQuery>;
+    type MergedQuery = NormalizeSelection<typeof typedQuery>;
 
     expectType<
       MergedQuery,
@@ -168,6 +162,24 @@ describe('Result', () => {
           title: string;
           content: string;
         }[];
+      }>
+    >();
+  });
+  it('infers the response type of a fragment with a type condition', () => {
+    const typedQuery = graphql('Query')({
+      user: {
+        username: true,
+        nickname: true,
+        '... on Post': {
+          title: true,
+        },
+      },
+    });
+    type Result1 = Result<typeof typedQuery>;
+    expectType<
+      Result1,
+      To.BeAssignableTo<{
+        user: { username: string; nickname: string | null } | { title: string };
       }>
     >();
   });

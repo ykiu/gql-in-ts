@@ -47,6 +47,10 @@ export type User = {
     arguments: {};
     type: User;
   };
+  '... on Post': {
+    arguments: {};
+    type: Post;
+  };
 };
 const PostStatusValues = ['DRAFT', 'PUBLIC', 'ARCHIVED'] as const;
 type PostStatus = Predicate<typeof PostStatusValues extends readonly (infer T)[] ? T : never>;
