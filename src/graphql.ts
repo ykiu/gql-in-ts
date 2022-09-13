@@ -293,7 +293,17 @@ export type PreprocessSelection<TSelection extends Selection<OutputObjectType>> 
       ? // The field has a sub-selection.
         // Recurse into the sub-selection and normalize the shape of the field to
         // [arg, sub-selection].
-        { 0: TSelectionArgument; 1: PreprocessSelection<TSubSelection> }
+        {
+          0: TSelectionArgument;
+          1: PreprocessSelection<
+            TKey extends TypedFragmentKey
+              ? // The field is a fragment spread with a type condition.
+                // Pull in the selections from the parent selection.
+                TSubSelection & TSelection
+              : // The field is a normal normal one.
+                TSubSelection
+          >;
+        }
       : // The field does not have a sub-selection.
         // Just normalize its shape to [arg, true].
         { 0: TSelectionArgument; 1: TSubSelection }

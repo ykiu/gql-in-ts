@@ -119,10 +119,10 @@ describe('Result', () => {
       },
     });
 
-    type MergedQuery = PreprocessSelection<typeof typedQuery>;
+    type PreprocessedQuery = PreprocessSelection<typeof typedQuery>;
 
     expectType<
-      MergedQuery,
+      PreprocessedQuery,
       To.BeAssignableTo<{
         user: Tuple<
           unknown,
@@ -175,19 +175,75 @@ describe('Result', () => {
   });
   it('infers the response type of a fragment with a type condition', () => {
     const typedQuery = graphql('Query')({
-      user: {
-        username: true,
-        nickname: true,
+      feed: {
+        id: true,
+        author: { username: true },
         '... on Post': {
           title: true,
+          content: true,
+        },
+        '... on Comment': {
+          content: true,
+          author: { nickname: true }, // selecting an extra field only on Comment
+          post: {
+            title: true,
+          },
         },
       },
     });
+    type PreprocessedQuery = PreprocessSelection<typeof typedQuery>;
+    expectType<
+      PreprocessedQuery,
+      To.BeAssignableTo<{
+        feed: Tuple<
+          {},
+          {
+            id: Tuple<{}, true>;
+            author: Tuple<{}, { username: Tuple<{}, true> }>;
+            '... on Post': Tuple<
+              {},
+              {
+                id: Tuple<{}, true>;
+                author: Tuple<{}, { username: Tuple<{}, true> }>;
+                title: Tuple<{}, true>;
+                content: Tuple<{}, true>;
+              }
+            >;
+            '... on Comment': Tuple<
+              {},
+              {
+                id: Tuple<{}, true>;
+                author: Tuple<{}, { username: Tuple<{}, true>; nickname: Tuple<{}, true> }>;
+                content: Tuple<{}, true>;
+                post: Tuple<{}, { title: Tuple<{}, true> }>;
+              }
+            >;
+          }
+        >;
+      }>
+    >();
     type Result1 = Result<typeof typedQuery>;
     expectType<
       Result1,
       To.BeAssignableTo<{
-        user: { username: string; nickname: string | null } | { title: string };
+        feed: (
+          | {
+              id: number;
+              author: { username: string };
+            }
+          | {
+              id: number;
+              author: { username: string };
+              title: string;
+              content: string;
+            }
+          | {
+              id: number;
+              author: { username: string; nickname: string };
+              content: string;
+              post: { title: string };
+            }
+        )[];
       }>
     >();
   });

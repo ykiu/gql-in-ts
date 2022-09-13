@@ -18,6 +18,10 @@ export type Query = {
     arguments: { author: { type: Nullable<Predicate<string>> } };
     type: List<Post>;
   };
+  feed: {
+    arguments: {};
+    type: List<FeedItem>;
+  };
   '...': {
     arguments: {};
     type: Query;
@@ -47,10 +51,6 @@ export type User = {
     arguments: {};
     type: User;
   };
-  '... on Post': {
-    arguments: {};
-    type: Post;
-  };
 };
 const PostStatusValues = ['DRAFT', 'PUBLIC', 'ARCHIVED'] as const;
 type PostStatus = Predicate<typeof PostStatusValues extends readonly (infer T)[] ? T : never>;
@@ -75,9 +75,50 @@ export type Post = {
     arguments: {};
     type: PostStatus;
   };
+  comments: {
+    arguments: {};
+    type: List<Comment>;
+  };
   '...': {
     arguments: {};
     type: Post;
+  };
+};
+type Comment = {
+  id: {
+    arguments: {};
+    type: Predicate<number>;
+  };
+  author: {
+    arguments: {};
+    type: User;
+  };
+  content: {
+    arguments: { maxLength: { type: Nullable<Predicate<number>> } };
+    type: Predicate<string>;
+  };
+  post: {
+    arguments: {};
+    type: Post;
+  };
+};
+/** Interface FeedItem */
+type FeedItem = {
+  id: {
+    arguments: {};
+    type: Predicate<number>;
+  };
+  author: {
+    arguments: {};
+    type: User;
+  };
+  '... on Post': {
+    arguments: {};
+    type: Post;
+  };
+  '... on Comment': {
+    arguments: {};
+    type: Comment;
   };
 };
 export type LoginInput = {
