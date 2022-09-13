@@ -6,11 +6,12 @@ import ts4_8 from 'ts4.8';
 import * as path from 'path';
 import { readFileSync } from 'fs';
 
-const CONFIG_FILE_PATH = './tsconfig.esm.json';
+const CONFIG_FILE_PATH = './tsconfig.test.json';
 
 // https://github.com/Microsoft/TypeScript/issues/6387#issuecomment-169739615
 const readFile = (path) => readFileSync(path, { encoding: 'utf-8' });
 
+// Having one version per line is handy when toggling versions to test.
 // prettier-ignore
 const diagnosticsCount = [
   ts4_4,
@@ -18,7 +19,8 @@ const diagnosticsCount = [
   ts4_6,
   ts4_7,
   ts4_8,
-].map((ts) => {
+].map(
+  (ts) => {
   const readConfigResult = ts.readConfigFile(CONFIG_FILE_PATH, readFile);
   if (readConfigResult.error) {
     console.log(readConfigResult.error);
@@ -32,9 +34,11 @@ const diagnosticsCount = [
   const compilerOptions = config.options;
   // Comment out the line below to debug loading of compiler options.
   // console.log(compilerOptions);
+  const time1 = performance.now();
   const program = ts.createProgram(config.fileNames, compilerOptions);
   const diagnostics = ts.getPreEmitDiagnostics(program);
-  console.log(`Checking in TypeScript ${ts.version} yielded ${diagnostics.length} error(s).`);
+  const time2 = performance.now();
+  console.log(`Checking in TypeScript ${ts.version} yielded ${diagnostics.length} error(s). (took ${(time2 - time1).toFixed(2)}ms)`);
   diagnostics.forEach((diagnostic) => {
     let message = 'Error';
     if (diagnostic.file) {

@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "noEmit": true
+  },
+  "include": [],
+  "files": [
+    "src/graphql.test.ts",
+    "src/readmeExamples.test.ts",
+  ]
+}

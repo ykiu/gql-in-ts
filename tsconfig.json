@@ -12,10 +12,6 @@
     "forceConsistentCasingInFileNames": true,
     "downlevelIteration": false,
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-  ],
   "include": [
     "src",
   ],
