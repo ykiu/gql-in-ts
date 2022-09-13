@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from './testing/vitest';
 import {
   GraphQLString,
   LiteralOrVariable,
