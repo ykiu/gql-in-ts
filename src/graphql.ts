@@ -212,6 +212,48 @@ export type Result<
     : ResultForNormalizedSelection<TOutputObjectType, PreprocessSelection<TRealSelection>>
   : never;
 
+/**
+ * Preprocesses selections to simplify subsequent processing.
+ *
+ * Does two things:
+ *
+ * 1. Normalizes the shape of selection entries to [arg, sub-selection].
+ * 2. Recursively merges fragment spreads.
+ *
+ * @example
+ * type T1 = PreprocessSelection<{ a: true, '...': { b: true, '...': { c: true } } }>;
+ * type T2 = { a: [{}, true], b: [{}, true], c: [{}, true] };
+ * // T1 == T2
+ */
+export type PreprocessSelection<TSelection extends Selection<OutputObjectType>> = MergeSpreads<{
+  [TKey in keyof TSelection]: TSelection[TKey] extends SelectionEntryShape<
+    infer TSelectionArgument,
+    infer TSubSelection
+  >
+    ? TSubSelection extends Selection<OutputObjectType>
+      ? // The field has a sub-selection.
+        // Recurse into the sub-selection and normalize the shape of the field to
+        // [arg, sub-selection].
+        {
+          0: TSelectionArgument;
+          1: PreprocessSelection<
+            TKey extends TypedFragmentKey
+              ? // The field is a fragment spread with a type condition.
+                // Pull in the selections from the parent selection.
+                TSubSelection & TSelection
+              : // The field is a normal normal one.
+                TSubSelection
+          >;
+        }
+      : // The field does not have a sub-selection.
+        // Just normalize its shape to [arg, true].
+        { 0: TSelectionArgument; 1: TSubSelection }
+    : // Cannot determine the shape of the field.
+      // This happens when inferring the general response type
+      // for a type without specifying a query.
+      TSelection[TKey];
+}>;
+
 /** A trivial helper for unwrapping a getter-style selection */
 type MaybeCallableSelection<TSelection extends Selection<OutputObjectType>> =
   | TSelection
@@ -270,48 +312,6 @@ type ResultForOutputObjectType<
         ? ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>>
         : never
       : never);
-
-/**
- * Preprocesses selections to simplify subsequent processing.
- *
- * Does two things:
- *
- * 1. Normalizes the shape of selection entries to [arg, sub-selection].
- * 2. Recursively merges fragment spreads.
- *
- * @example
- * type T1 = PreprocessSelection<{ a: true, '...': { b: true, '...': { c: true } } }>;
- * type T2 = { a: [{}, true], b: [{}, true], c: [{}, true] };
- * // T1 == T2
- */
-export type PreprocessSelection<TSelection extends Selection<OutputObjectType>> = MergeSpreads<{
-  [TKey in keyof TSelection]: TSelection[TKey] extends SelectionEntryShape<
-    infer TSelectionArgument,
-    infer TSubSelection
-  >
-    ? TSubSelection extends Selection<OutputObjectType>
-      ? // The field has a sub-selection.
-        // Recurse into the sub-selection and normalize the shape of the field to
-        // [arg, sub-selection].
-        {
-          0: TSelectionArgument;
-          1: PreprocessSelection<
-            TKey extends TypedFragmentKey
-              ? // The field is a fragment spread with a type condition.
-                // Pull in the selections from the parent selection.
-                TSubSelection & TSelection
-              : // The field is a normal normal one.
-                TSubSelection
-          >;
-        }
-      : // The field does not have a sub-selection.
-        // Just normalize its shape to [arg, true].
-        { 0: TSelectionArgument; 1: TSubSelection }
-    : // Cannot determine the shape of the field.
-      // This happens when inferring the general response type
-      // for a type without specifying a query.
-      TSelection[TKey];
-}>;
 
 /**
  * @example
