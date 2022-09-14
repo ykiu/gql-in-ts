@@ -10,6 +10,10 @@ import {
 } from '../graphql';
 export type Schema = { query: Query; mutation: Mutation };
 export type Query = {
+  __typename: {
+    arguments: {};
+    type: Predicate<'Query'>;
+  };
   user: {
     arguments: {};
     type: User;
@@ -28,6 +32,10 @@ export type Query = {
   };
 };
 export type User = {
+  __typename: {
+    arguments: {};
+    type: Predicate<'User'>;
+  };
   id: {
     arguments: {};
     type: Predicate<number>;
@@ -55,6 +63,10 @@ export type User = {
 const PostStatusValues = ['DRAFT', 'PUBLIC', 'ARCHIVED'] as const;
 type PostStatus = Predicate<typeof PostStatusValues extends readonly (infer T)[] ? T : never>;
 export type Post = {
+  __typename: {
+    arguments: {};
+    type: Predicate<'Post'>;
+  };
   id: {
     arguments: {};
     type: Predicate<number>;
@@ -85,6 +97,10 @@ export type Post = {
   };
 };
 type Comment = {
+  __typename: {
+    arguments: {};
+    type: Predicate<'Comment'>;
+  };
   id: {
     arguments: {};
     type: Predicate<number>;
@@ -104,6 +120,10 @@ type Comment = {
 };
 /** Interface FeedItem */
 type FeedItem = {
+  __typename: {
+    arguments: {};
+    type: Predicate<'Post' | 'Comment'>;
+  };
   id: {
     arguments: {};
     type: Predicate<number>;

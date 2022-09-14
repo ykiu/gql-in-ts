@@ -299,7 +299,20 @@ type ResultForOutputObjectType<
         : // so that the Result type can determine the schema type of a query without explicit user input.
         TKey extends TypedFragmentKey
         ? never // Remove the key if it matches the pattern of fragment type conditions.
-        : TKey]: TKey extends AliasKey<infer TSchemaKey>
+        : TKey]: TKey extends '__typename'
+        ? keyof TSelection extends infer K
+          ? Exclude<
+              ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>>, // Selection without alias
+              K extends TypedFragmentKey
+                ? TOutputObjectType[K] extends {
+                    type: { __typename: { type: Predicate<infer T> } };
+                  }
+                  ? T
+                  : never
+                : never
+            >
+          : never //
+        : TKey extends AliasKey<infer TSchemaKey>
         ? ResultEntry<TOutputObjectType[TSchemaKey], NonNullable<TSelection[TKey]>> // Selection with alias
         : TKey extends keyof TOutputObjectType
         ? ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>> // Selection without alias

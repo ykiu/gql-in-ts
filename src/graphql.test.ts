@@ -176,6 +176,7 @@ describe('Result', () => {
   it('infers the response type of a fragment with a type condition', () => {
     const typedQuery = graphql('Query')({
       feed: {
+        __typename: true,
         id: true,
         author: { username: true },
         '... on Post': {
@@ -222,30 +223,37 @@ describe('Result', () => {
         >;
       }>
     >();
-    type Result1 = Result<typeof typedQuery>;
-    expectType<
-      Result1,
-      To.BeAssignableTo<{
-        feed: (
-          | {
-              id: number;
-              author: { username: string };
-            }
-          | {
-              id: number;
-              author: { username: string };
-              title: string;
-              content: string;
-            }
-          | {
-              id: number;
-              author: { username: string; nickname: string };
-              content: string;
-              post: { title: string };
-            }
-        )[];
-      }>
-    >();
+
+    // Test type narrowing works as expected.
+    // Note that the statements are wrapped in an immediately-GCed function so
+    // that they can be tested without actually being executed.
+    (result: Result<typeof typedQuery>) => {
+      const feedItem = result.feed[0];
+      if (feedItem.__typename === 'Post') {
+        expectType<
+          typeof feedItem,
+          To.BeAssignableTo<{
+            id: number;
+            author: { username: string };
+            title: string;
+            content: string;
+          }>
+        >();
+        feedItem;
+      }
+      if (feedItem.__typename === 'Comment') {
+        expectType<
+          typeof feedItem,
+          To.BeAssignableTo<{
+            id: number;
+            author: { username: string; nickname: string | null };
+            content: string;
+            post: { title: string };
+          }>
+        >();
+        feedItem;
+      }
+    };
   });
 });
 
