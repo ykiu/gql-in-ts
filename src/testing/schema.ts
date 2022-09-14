@@ -182,6 +182,7 @@ type ObjectTypeNamespace = {
   Query: Query;
   User: User;
   Post: Post;
+  FeedItem: FeedItem;
   LoginPayload: LoginPayload;
   Mutation: Mutation;
 };

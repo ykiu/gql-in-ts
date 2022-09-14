@@ -186,9 +186,11 @@ const makeGraphQLRequest = async <TResult>(
 };
 ```
 
-## Using aliases
+## Advanced
 
-`gql-in-ts` supports aliases via special keys with the pattern "\[original name\] as \[alias\]":
+### Using aliases
+
+You can alias a field by appending ` as \[alias\]`:
 
 ```ts
 const postFragment = graphql('Post')({
@@ -198,9 +200,41 @@ const postFragment = graphql('Post')({
 });
 ```
 
-An alias won't compromise the level of type safety because it relies on [template literal types](https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html).
+You can access the fields on the resuling response by their respective aliases. This is made possible thanks to [template literal types](https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html) of TypeScript.
 
-## Merging fragments
+### Unions and interfaces
+
+You can specify the type condition for a fragment by using keys with the pattern "... on \[type name\]". Say `FeedItem` is an interface for things that appear in feeds, and `Post` and `Comment` implement `FeedItem`:
+
+```ts
+const feedFragment = graphql('FeedItem')({
+  __typename: true,
+  id: true,
+  author: { username: true },
+  '... on Comment': {
+    content: true,
+    post: { title: true },
+  },
+  '... on Post': {
+    title: true,
+    content: true,
+  },
+});
+```
+
+Use `__typename` to switch by the type of the feedItem to benefit from TypeScript's type narrowing feature:
+
+```ts
+const processFeedItem = (feedItem: Result<typeof feedFragment>) => {
+  if (feedItem.__typename === 'Comment') {
+    // The type of feedItem is Comment in this block.
+  } else if (feedItem.__typename === 'Post') {
+    // The type of feedItem is Post in this block.
+  }
+};
+```
+
+### Merging fragments
 
 Sometimes you may want to "merge" a fragment onto a larger query or fragment. This can be done in GraphQL using fragment spread:
 
@@ -304,7 +338,7 @@ compileGraphQL('query')({
 // Error: Cannot merge fragments. Saw conflicting arguments...
 ```
 
-## Using variables
+### Using variables
 
 `gql-in-ts` supports GraphQL variables. Variables allow to compile a query once and to reuse it over and over again with different parameters, minimizing the overhead of compiling.
 
