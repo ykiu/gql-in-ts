@@ -236,95 +236,58 @@ const processFeedItem = (feedItem: Result<typeof feedFragment>) => {
 
 ### Merging fragments
 
-Sometimes you may want to "merge" a fragment onto a larger query or fragment. This can be done in GraphQL using fragment spread:
+You can "merge" fragments. This is a powerful feature that allows to colocate fragments and the code that depend on them, maximizing maintainability.
 
-```graphql
-fragment postDetailFragment on Post {
-  id
-  content
-  author {
-    id
-    username
-    avatar(width: 128, height: 128)
-  }
-}
-
-query postsQuery {
-  posts {
-    ...postDetailFragment
-    author {
-      nickname
-    }
-  }
-}
-```
-
-You can do the equivalent in `gql-in-ts` by using using a special key spelled "...":
+Say you want to render a post. You've split the rendering function into the one that renders the header of a post and the one that renders the main text of a post. The former is only interested in the post's `title` and `author`:
 
 ```ts
-const postDetailFragment = graphql('Post')({
-  id: true,
-  content: true,
+const postHeaderFragment = graphql('Post')({
+  title: true,
   author: {
     id: true,
     username: true,
     avatar: [{ width: 128, height: 128 }, true],
   },
 });
-const query = graphql('Query')({
-  posts: {
-    '...': postDetailFragment,
-    author: { nickname: true },
-  },
-});
+
+const renderPostHeader = (post: Result<typeof postHeaderFragment>) => {
+  // ...
+};
 ```
 
-To merge in more than one fragments, give "..." an arbitrary alias to avoid defining multiple properties with the same name:
+...and the latter is only interested in the post's `content`:
 
 ```ts
-const postDetailFragment = graphql('Post')({
-  id: true,
+const postContentFragment = graphql('Post')({
   content: true,
-  author: {
-    id: true,
-    username: true,
-    avatar: [{ width: 128, height: 128 }, true],
-  },
 });
-const postSummaryFragment = graphql('Post')({
-  id: true,
-  'content as shortContent': [{ maxLength: 40 }, true],
-  author: {
-    nickname: true,
-    'avatar as smallAvatar': [{ width: 32, height: 32 }, true],
-  },
-});
-const query = graphql('Query')({
-  posts: {
-    '... as a': postDetailFragment,
-    '... as b': postSummaryFragment,
-  },
-});
-const compiled = compileGraphQL('query')(query);
-expect(compiled).toEqual(
-  `query {
-  posts {
-    id
-    content
-    author {
-      nickname
-      smallAvatar: avatar(width: 32, height: 32)
-      id
-      username
-      avatar(width: 128, height: 128)
-    }
-    shortContent: content(maxLength: 40)
-  }
-}`,
-);
+
+const renderPostContent = (post: Result<typeof postContentFragment>) => {
+  // ...
+};
 ```
 
-_Caution: when you try to merge fragments with conflicting arguments, compileGraphQL will throw an Error. For example, the following is an error._
+Now, you'll need to define the fragment for the parent render function that renders both of them. The parent needs `id` as its own requirement and the data the children need. You can merge the fragments of the children on to the parent's one by using the special key `...`:
+
+```ts
+const postFragment = graphql('Post')({
+  id: true,
+  '... as a': postHeaderFragment.
+  '... as b': postContentFragment.
+});
+
+const renderPost = (post: Result<typeof postFragment>) => {
+  const postHeader = renderPostHeader(post);
+  const postContent = renderPostHeader(post);
+  // ...
+}
+```
+
+Note `...` is given [aliases](#using-aliases) to avoid key collision. You may find the use of '...' similar to the object spread syntax of JavaScript. In fact it is, but by using '...' as keys you are telling `gql-in-ts` to _recursively_ merge the fragments, while the object spread syntax of JavaScript merges objects only _shallowly_.
+
+By treating `gql-in-ts` fragments as the single source of truth, you can build up a large, complex tree of rendering functions without worring about syncing GraphQL fragments and TypeScript interfaces.
+
+_Caution: when you try to merge fragments with conflicting arguments, compileGraphQL will throw a runtime error. For example, the following is an error._
 
 ```ts
 compileGraphQL('query')({
@@ -340,7 +303,7 @@ compileGraphQL('query')({
 
 ### Using variables
 
-`gql-in-ts` supports GraphQL variables. Variables allow to compile a query once and to reuse it over and over again with different parameters, minimizing the overhead of compiling.
+Variables allow to compile a query once and to reuse it over and over again with different parameters, minimizing the overhead of compiling.
 
 To define a fragment with variables, declare the names and the types of the variables and pass a callback to `graphql`. You can reference the variables from within the callback:
 
@@ -350,7 +313,7 @@ const userFragment = graphql('User', { avatarSize: 'Int!' })(($) => ({
 }));
 ```
 
-As in the first example, `graphql` returns the last argument unmodified. In this case, the last argument is a function. Call it in other queries or fragments:
+The `graphql` function always returns the last argument without ever making changes to it. In this case, the last argument is a function. Call it in other queries or fragments:
 
 ```ts
 const postFragment = graphql('Post', { avatarSize: 'Int!' })(($) => ({
@@ -381,7 +344,7 @@ expect(compiled).toEqual(
 );
 ```
 
-The syntax of variable definitions follows the syntax of variable definitions of real GraphQL (e.g. types are optional by default, types with "!" are required). Variable definitions are type checked using [template literal types](https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html).
+The syntax of variable definitions follows that of real GraphQL (e.g. types are optional by default, types with "!" are required). Variable definitions are type checked using [template literal types](https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html).
 
 ## Limitations
 
@@ -389,7 +352,6 @@ At the moment `gql-in-ts` has the following limitations:
 
 - Not capable of eliminating extraneous fields.
   - As it is hard to prevent objects from having extra properties in TypeScript, you won't get a type error even if you include a non-existent field in your query. Since GraphQL execution engines error when they meet an unknown field, this introduces an unsafeness where the code passes type check but errors at runtime.
-- No support for unions and interfaces, at the moment.
 
 ## Related works
 
