@@ -54,7 +54,7 @@ describe('Selection', () => {
 });
 
 describe('Result', () => {
-  it('infers the response type of a query', () => {
+  it('processes a simple selection', () => {
     const typedQuery = graphql('Query')({
       user: {
         username: true,
@@ -74,7 +74,7 @@ describe('Result', () => {
       }>
     >();
   });
-  it('infers the response type of a callable query', () => {
+  it('processes a callback selection', () => {
     const typedQuery = graphql('Query', { author: 'String' })(($) => ({
       posts: [
         { author: $.author },
@@ -91,7 +91,7 @@ describe('Result', () => {
       }>
     >();
   });
-  it('merges fragment spreads', () => {
+  it('processes a selection with fragment spreads', () => {
     const typedQuery = graphql('Query')({
       user: {
         username: true,
@@ -173,7 +173,7 @@ describe('Result', () => {
       }>
     >();
   });
-  it('infers the response type of a fragment with a type condition', () => {
+  it('processes a selection with fragments with type conditions', () => {
     const typedQuery = graphql('Query')({
       feed: {
         __typename: true,
@@ -266,7 +266,7 @@ describe('compileGraphQL', () => {
     },
   ): TResult => ({} as TResult);
 
-  it('can compile a basic query', () => {
+  it('compiles a simple query', () => {
     expect(
       compileGraphQL('query')({
         user: {
@@ -333,7 +333,7 @@ query {
     }).toThrowError('Cannot merge fragments. Saw conflicting arguments');
   });
 
-  it('can compile a variable of type list', () => {
+  it('compiles a variable of type list', () => {
     const compiled = compileGraphQL('mutation', { inputs: '[MutatePostInput!]!' })(($) => ({
       bulkMutatePosts: [{ inputs: $.inputs }, { id: true }],
     }));
@@ -383,7 +383,7 @@ mutation($inputs: [MutatePostInput!]!) {
     });
     expectType<typeof result, To.BeAssignableTo<{ bulkMutatePosts: { id: number }[] }>>();
   });
-  it('can compile a variable of input', () => {
+  it('compiles a variable of input', () => {
     const compiled = compileGraphQL('mutation', { input: 'LoginInput!' })(($) => ({
       login: [{ input: $.input }, { token: true, user: { username: true } }],
     }));
