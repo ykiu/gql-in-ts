@@ -190,7 +190,7 @@ const makeGraphQLRequest = async <TResult>(
 
 ### Using aliases
 
-You can alias a field by appending ` as \[alias\]`:
+You can alias a field by appending ` as [alias]`:
 
 ```ts
 const postFragment = graphql('Post')({
@@ -204,7 +204,8 @@ You can access the fields on the resuling response by their respective aliases. 
 
 ### Unions and interfaces
 
-You can specify the type condition for a fragment by using keys with the pattern "... on \[type name\]". Say `FeedItem` is an interface for things that appear in feeds, and `Post` and `Comment` implement `FeedItem`:
+You can specify the type condition for a fragment by using keys with the pattern `... on [type name]`. Say `FeedItem` is an interface for things that appear in feeds, and `Post` and `Comment` implement `FeedItem`. `id` and `author` are common for `FeedItem`, but other fields are defined in
+respective implementations:
 
 ```ts
 const feedFragment = graphql('FeedItem')({
@@ -227,9 +228,9 @@ Use `__typename` to switch by the type of the feedItem to benefit from TypeScrip
 ```ts
 const processFeedItem = (feedItem: Result<typeof feedFragment>) => {
   if (feedItem.__typename === 'Comment') {
-    // The type of feedItem is Comment in this block.
+    // The type of feedItem is inferred as Comment in this block.
   } else if (feedItem.__typename === 'Post') {
-    // The type of feedItem is Post in this block.
+    // The type of feedItem is inferred as Post in this block.
   }
 };
 ```
