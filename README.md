@@ -18,7 +18,7 @@ A type-safe way to write GraphQL. Express queries as plain JavaScript objects an
 
 ### Framework agnostic
 
-**Use with the tooling of your choice**. The sole mission of `gql-in-ts` at runtime is to transform JavaScript objects to GraphQL query strings (similar to `JSON.stringify()`). `gql-in-ts` is thin by design. It does not even depend on browser APIs and runs in any JavaScript environment.
+**Work with your favorite stack**. At its core, `gql-in-ts` is a `JSON.stringify()` for GraphQL. Whether it's React, Vue, vanilla or even a non-browser environment -- you can use `gql-in-ts` in any context if it's powered by JavaScript.
 
 ## Motivation
 
