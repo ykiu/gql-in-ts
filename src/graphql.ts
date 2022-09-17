@@ -225,7 +225,10 @@ export type Result<
  * type T2 = { a: [{}, true], b: [{}, true], c: [{}, true] };
  * // T1 == T2
  */
-export type PreprocessSelection<TSelection extends Selection<OutputObjectType>> = MergeSpreads<{
+export type PreprocessSelection<TSelection extends Selection<OutputObjectType>> =
+  NormalizeSelection<TSelection>;
+
+type NormalizeSelection<TSelection extends Selection<OutputObjectType>> = MergeSpreads<{
   [TKey in keyof TSelection]: TSelection[TKey] extends SelectionEntryShape<
     infer TSelectionArgument,
     infer TSubSelection
@@ -236,13 +239,10 @@ export type PreprocessSelection<TSelection extends Selection<OutputObjectType>> 
         // [arg, sub-selection].
         {
           0: TSelectionArgument;
-          1: PreprocessSelection<
+          1: NormalizeSelection<
             TKey extends TypedFragmentKey
-              ? // The field is a fragment spread with a type condition.
-                // Pull in the selections from the parent selection.
-                TSubSelection & TSelection
-              : // The field is a normal normal one.
-                TSubSelection
+              ? TSubSelection & { '... as __gqlints_internal': TSelection }
+              : TSubSelection
           >;
         }
       : // The field does not have a sub-selection.

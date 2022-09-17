@@ -177,18 +177,43 @@ describe('Result', () => {
     const typedQuery = graphql('Query')({
       feed: {
         __typename: true,
-        id: true,
-        author: { username: true },
-        '... on Post': {
-          title: true,
-          content: true,
+        '...': {
+          // Expect "id" to be selected on Comment.
+          id: true,
         },
+        author: { username: true },
         '... on Comment': {
           content: true,
-          author: { nickname: true }, // selecting an extra field only on Comment
+          author: [
+            // Note that `author` on parent is without arguments (like {...})
+            // and `author` on Comment is with arguments (like [{}, {...}]).
+            // Expect selection entries of different shape can be merged without
+            // any problem.
+            {},
+            {
+              nickname: true,
+            },
+          ],
           post: {
             title: true,
           },
+        },
+        '... as ...2': {
+          // Current limitation: selections from the grand parent are not inherited.
+          __typename: true,
+          id: true,
+          author: { username: true },
+
+          // Expect Post fields to appear in the result.
+          '... on Post': {
+            title: true,
+            content: true,
+          },
+
+          // Current limitation: cannot give an alias to fragments with type conditions
+          // '... on Post as ...3': {
+          //   content: true,
+          // },
         },
       },
     });

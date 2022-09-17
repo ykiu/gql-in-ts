@@ -140,6 +140,10 @@ type FeedItem = {
     arguments: {};
     type: Comment;
   };
+  '...': {
+    arguments: {};
+    type: FeedItem;
+  };
 };
 export type LoginInput = {
   username: { type: Predicate<string> };
