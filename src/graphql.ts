@@ -456,12 +456,21 @@ const normalizeEntry = <TOutputObjectTypeEntry extends OutputObjectTypeEntry>(
   return [{}, selectionEntry];
 };
 
-const compileKey = (key: string) => {
+/**
+ * Returns [originalName, alias]. If alias is not specified, originalName === alias.
+ */
+const parseKey = (key: string): [string, string] => {
   const match = /(.+) as (.+)/.exec(key);
-  if (match) {
-    return `${match[2]}: ${match[1]}`;
+  if (match) return [match[1], match[2]];
+  return [key, key];
+};
+
+const compileKey = (key: string) => {
+  const [originalName, alias] = parseKey(key);
+  if (originalName === alias) {
+    return originalName;
   }
-  return key;
+  return `${alias}: ${originalName}`;
 };
 
 const isVariableObject = (value: unknown): value is VariableReference<InputType> =>
@@ -547,10 +556,10 @@ export const mergeSelections = <
 
 const resolveSpreads = (selection: any): any => {
   let selectionWithoutSpreads: any = objectFromEntries(
-    objectEntries(selection).filter(([k]) => !k.startsWith('...')),
+    objectEntries(selection).filter(([k]) => parseKey(k)[0] !== '...'),
   );
   const spreads: any[] = objectEntries(selection)
-    .filter(([k]) => k.startsWith('...'))
+    .filter(([k]) => parseKey(k)[0] === '...')
     .map(([, v]) => v);
   spreads.map(resolveSpreads).forEach((s) => {
     selectionWithoutSpreads = mergeSelections(selectionWithoutSpreads, s);

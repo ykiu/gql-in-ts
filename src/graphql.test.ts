@@ -199,7 +199,7 @@ describe('Result', () => {
           },
         },
         '... as ...2': {
-          // Current limitation: selections from the grand parent are not inherited.
+          // Current limitation: selections from the spread parent are not inherited.
           __typename: true,
           id: true,
           author: { username: true },
@@ -340,6 +340,46 @@ query {
     shortContent: content(maxLength: 100)
     content
     title
+  }
+}
+    `.trim(),
+    );
+  });
+  it('compiles fragments with type conditions', () => {
+    expect(
+      compileGraphQL('query')({
+        feed: {
+          '... as 1': {
+            id: true,
+          },
+          '... as 2': {
+            id: true,
+            '... on Comment': {
+              '...': {
+                content: true,
+              },
+              post: { title: true },
+            },
+            '... on Post': {
+              title: true,
+            },
+          },
+        },
+      }),
+    ).toEqual(
+      `
+query {
+  feed {
+    id
+    ... on Comment {
+      post {
+        title
+      }
+      content
+    }
+    ... on Post {
+      title
+    }
   }
 }
     `.trim(),
