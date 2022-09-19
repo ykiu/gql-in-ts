@@ -450,15 +450,21 @@ mutation($inputs: [MutatePostInput!]!) {
   });
   it('compiles a variable of input', () => {
     const compiled = compileGraphQL('mutation', { input: 'LoginInput!' })(($) => ({
-      login: [{ input: $.input }, { token: true, user: { username: true } }],
+      login: [
+        { input: $.input },
+        { __typename: true, '... on LoginSuccess': { token: true, user: { username: true } } },
+      ],
     }));
     expect(compiled).toEqual(
       `
 mutation($input: LoginInput!) {
   login(input: $input) {
-    token
-    user {
-      username
+    __typename
+    ... on LoginSuccess {
+      token
+      user {
+        username
+      }
     }
   }
 }
@@ -472,9 +478,14 @@ mutation($input: LoginInput!) {
         input: { username: 'alice', password: 'zxcvbn' },
       },
     });
-    expectType<
-      typeof result,
-      To.BeAssignableTo<{ login: { token: string; user: { username: string } } }>
-    >();
+
+    ({ login }: typeof result) => {
+      if (login.__typename === 'LoginSuccess') {
+        expectType<
+          typeof login,
+          To.BeAssignableTo<{ token: string; user: { username: string } }>
+        >();
+      }
+    };
   });
 });

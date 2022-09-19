@@ -178,7 +178,26 @@ export type LoginInput = {
 export type LoginPayload = {
   __typename: {
     arguments: {};
-    type: Predicate<"LoginPayload">;
+    type: Predicate<"LoginSuccess" | "LoginError">;
+  };
+  "...": {
+    arguments: {};
+    type: LoginPayload;
+  };
+  "... on LoginSuccess": {
+    arguments: {};
+    type: LoginSuccess;
+  };
+  "... on LoginError": {
+    arguments: {};
+    type: LoginError;
+  };
+}
+
+export type LoginSuccess = {
+  __typename: {
+    arguments: {};
+    type: Predicate<"LoginSuccess">;
   };
   token: {
     arguments: {};
@@ -190,7 +209,22 @@ export type LoginPayload = {
   };
   "...": {
     arguments: {};
-    type: LoginPayload;
+    type: LoginSuccess;
+  };
+}
+
+export type LoginError = {
+  __typename: {
+    arguments: {};
+    type: Predicate<"LoginError">;
+  };
+  message: {
+    arguments: {};
+    type: String;
+  };
+  "...": {
+    arguments: {};
+    type: LoginError;
   };
 }
 
@@ -502,6 +536,8 @@ export type OutputCompositeTypeMap = {
   Post: Post;
   Comment: Comment;
   LoginPayload: LoginPayload;
+  LoginSuccess: LoginSuccess;
+  LoginError: LoginError;
   Mutation: Mutation;
   StrayInterface: StrayInterface;
   __Schema: __Schema;

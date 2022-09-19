@@ -47,9 +47,15 @@ input LoginInput {
   password: String!
 }
 
-type LoginPayload {
+union LoginPayload = LoginSuccess | LoginError
+
+type LoginSuccess {
   token: String!
   user: User!
+}
+
+type LoginError {
+  message: String!
 }
 
 type Mutation {
