@@ -1,4 +1,4 @@
-import 'typescript/lib/lib.es2020';
+/// <reference lib="es2020" />
 
 import {
   buildSchema,
@@ -113,7 +113,9 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
     return [
       `__typename: {`,
       ...indent(compileArguments([])),
-      `  type: Predicate<${types.map((type) => `"${type.name}"`).join(' | ')}>;`,
+      `  type: Predicate<${
+        types.length ? types.map((type) => `"${type.name}"`).join(' | ') : 'never'
+      }>;`,
       `};`,
     ];
   };

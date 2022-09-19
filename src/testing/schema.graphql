@@ -62,3 +62,8 @@ input MutatePostInput {
   title: String!
   content: String!
 }
+
+# Ensure interfaces without implementations won't break the generated code.
+interface StrayInterface {
+  foo: String
+}

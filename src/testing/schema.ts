@@ -223,6 +223,21 @@ export type MutatePostInput = {
   content: { type: String };
 }
 
+export type StrayInterface = {
+  __typename: {
+    arguments: {};
+    type: Predicate<never>;
+  };
+  foo: {
+    arguments: {};
+    type: Nullable<String>;
+  };
+  "...": {
+    arguments: {};
+    type: StrayInterface;
+  };
+}
+
 export type __Schema = {
   __typename: {
     arguments: {};
@@ -488,6 +503,7 @@ export type OutputCompositeTypeMap = {
   Comment: Comment;
   LoginPayload: LoginPayload;
   Mutation: Mutation;
+  StrayInterface: StrayInterface;
   __Schema: __Schema;
   __Type: __Type;
   __Field: __Field;
