@@ -9,6 +9,6 @@
     "outDir": "dist",
   },
   "include": [
-    "./src/compileGraphqlSchema.ts"
+    "./src/cli.ts"
   ],
 }

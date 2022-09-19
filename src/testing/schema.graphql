@@ -6,6 +6,7 @@ schema {
 type Query {
   user: User!
   posts(author: String): [Post!]!
+  feed: [FeedItem!]!
 }
 
 type User {
@@ -15,18 +16,30 @@ type User {
   avatar(width: Int, height: Int): String
 }
 
+interface FeedItem {
+  id: Int!
+  author: User!
+}
+
 enum PostStatus {
   DRAFT
   PUBLIC
   ARCHIVED
 }
 
-type Post {
+type Post implements FeedItem {
   id: Int!
   author: User!
   title: String!
   content(maxLength: Int): String!
   status: PostStatus!
+}
+
+type Comment implements FeedItem {
+  id: Int!
+  author: User!
+  content(maxLength: Int): String!
+  post: Post!
 }
 
 input LoginInput {
