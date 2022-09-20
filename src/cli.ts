@@ -2,7 +2,8 @@
 
 /// <reference types="node" />
 
-import { createWriteStream, readFileSync } from 'fs';
+import { createWriteStream, mkdirSync, readFileSync } from 'fs';
+import { dirname } from 'path';
 import { argv } from 'process';
 import { Writable } from 'stream';
 import compile, { CompileParams, ScalarEntry } from './codegen';
@@ -81,7 +82,7 @@ const getParams = (args: string[]): CliParams => {
         pointer = configurationPathPointer;
         break;
       default:
-        if (/--?[a-zA-Z]+/.test(arg)) throw new CliError(`Unknown option: ${arg}.`);
+        if (/^--?[a-zA-Z]+/.test(arg)) throw new CliError(`Unknown option: ${arg}.`);
         pointer.push(arg);
 
         // Assuming options take at most one argument.
@@ -146,6 +147,12 @@ const getParams = (args: string[]): CliParams => {
   };
 };
 
+const getWritable = (path: string) => {
+  if (path === '-') return process.stdout;
+  mkdirSync(dirname(path), { recursive: true });
+  return createWriteStream(path, 'utf8');
+};
+
 const main = async () => {
   let params: CliParams;
   try {
@@ -161,10 +168,8 @@ const main = async () => {
     encoding: 'utf8',
   }).toString();
   const document = compile(source, params);
-  const writable: Writable =
-    params.destinationPath === '-'
-      ? process.stdout
-      : createWriteStream(params.destinationPath, 'utf8');
+
+  const writable: Writable = getWritable(params.destinationPath);
   writable.write(document, 'utf-8');
 };
 
