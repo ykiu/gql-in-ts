@@ -1,4 +1,5 @@
 // This file is auto-generated with gql-in-ts
+// The schema diff check in CI should fail.
 
 import {
   List,
