@@ -4,7 +4,7 @@
 
 import { readFileSync, writeFileSync } from 'fs';
 import { argv } from 'process';
-import compile, { CompileParams } from './codegen';
+import compile, { CompileParams, ScalarEntry } from './codegen';
 
 class CliError extends Error {}
 
@@ -23,11 +23,21 @@ Expected ${name} to be a string, but got ${typeof value}.
   return value;
 };
 
-const assertObject = (value: unknown, name: string): {} => {
+const assertObject = (value: unknown, name: string): Record<string, unknown> => {
   if (!value || typeof value !== 'object')
     throw new CliError(
       `
 Expected ${name} to be an object, but got ${typeof value}.
+`.trim(),
+    );
+  return value as Record<string, unknown>;
+};
+
+const assertArray = (value: unknown, name: string): unknown[] => {
+  if (!Array.isArray(value))
+    throw new CliError(
+      `
+Expected ${name} to be an array, but got ${typeof value}.
 `.trim(),
     );
   return value;
@@ -88,7 +98,7 @@ const getParams = (args: string[]): CliParams => {
   let sourcePath = positionalArgumentsPointer[0];
   let destinationPath = positionalArgumentsPointer[1];
   let importPath = 'gql-in-ts';
-  const scalars: Record<string, string> = {};
+  const scalars: ScalarEntry[] = [];
 
   if (configurationPath) {
     const configurationString = readFileSync(configurationPath, { encoding: 'utf8' });
@@ -110,12 +120,13 @@ const getParams = (args: string[]): CliParams => {
           importPath = assertString(configValue, configKey);
           break;
         case 'scalars':
-          Object.entries(assertObject(configValue, configKey)).forEach(
-            ([scalarKey, scalarValue]) => {
-              Object.defineProperty(scalars, scalarKey, { value: scalarValue });
-            },
-          );
-          importPath = assertString(configValue, configKey);
+          assertArray(configValue, configKey).forEach((scalarEntry, i) => {
+            const { graphql, typescript } = assertObject(scalarEntry, `${configKey}[${i}]`);
+            scalars.push({
+              graphql: assertString(graphql, `${configKey}[${i}].graphql`),
+              typescript: assertString(typescript, `${configKey}[${i}].typescript`),
+            });
+          });
           break;
         default:
           throw new CliError(`Unknown configuration key "${configKey}".`);

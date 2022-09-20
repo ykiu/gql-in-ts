@@ -19,9 +19,14 @@ import {
   GraphQLUnionType,
 } from 'graphql';
 
+export interface ScalarEntry {
+  graphql: string;
+  typescript: string;
+}
+
 export interface CompileParams {
   importPath: string;
-  scalars: Record<string, string>;
+  scalars: readonly ScalarEntry[];
 }
 
 const indent = (rows: string[]) => {
@@ -44,8 +49,8 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
     ID: 'string',
   };
 
-  Object.entries(params.scalars).forEach(([k, value]) =>
-    Object.defineProperty(scalars, k, { value }),
+  params.scalars.forEach(({ graphql, typescript }) =>
+    Object.defineProperty(scalars, graphql, { value: typescript }),
   );
 
   const compileNullableTypeReference = (type: GraphQLNullableType): string => {
