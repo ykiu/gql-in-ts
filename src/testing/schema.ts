@@ -14,6 +14,7 @@ type Float = Predicate<number>;
 type String = Predicate<string>;
 type Boolean = Predicate<boolean>;
 type ID = Predicate<string>;
+type DateTime = Predicate<Date>;
 
 export type Schema = {
   query: Query;

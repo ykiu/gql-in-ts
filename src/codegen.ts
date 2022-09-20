@@ -39,19 +39,16 @@ const expectValueToBeNever = (value: never): never => {
 };
 
 const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[] => {
-  const scalars = {
+  const scalars = new Map([
     // GraphQL built-in scalars
     // https://spec.graphql.org/June2018/#sec-Scalars
-    Int: 'number',
-    Float: 'number',
-    String: 'string',
-    Boolean: 'boolean',
-    ID: 'string',
-  };
-
-  params.scalars.forEach(({ graphql, typescript }) =>
-    Object.defineProperty(scalars, graphql, { value: typescript }),
-  );
+    ['Int', 'number'],
+    ['Float', 'number'],
+    ['String', 'string'],
+    ['Boolean', 'boolean'],
+    ['ID', 'string'],
+    ...params.scalars.map(({ graphql, typescript }) => [graphql, typescript] as const),
+  ]);
 
   const compileNullableTypeReference = (type: GraphQLNullableType): string => {
     if (type instanceof GraphQLScalarType) return type.name;
@@ -205,7 +202,7 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
 
   const generateScalarMapping = () => {
     return [
-      ...Object.entries(scalars).map(
+      ...Array.from(scalars.entries()).map(
         ([graphqlName, typescriptName]) => `type ${graphqlName} = Predicate<${typescriptName}>;`,
       ),
       '',

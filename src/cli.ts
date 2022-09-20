@@ -45,7 +45,7 @@ Expected ${name} to be an array, but got ${typeof value}.
 };
 
 const printHelpAndExit = (): never => {
-  console.log(
+  console.error(
     `
 Usage
 
