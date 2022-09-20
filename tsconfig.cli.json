@@ -3,9 +3,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "CommonJS",
-    "types": [
-      "node"
-    ],
+    "types": [],
     "outDir": "dist",
   },
   "include": [

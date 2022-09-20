@@ -1,3 +1,7 @@
+#!/usr/bin/env node
+
+/// <reference types="node" />
+
 import { readFileSync, writeFileSync } from 'fs';
 import { argv } from 'process';
 import compile, { CompileParams } from './codegen';
