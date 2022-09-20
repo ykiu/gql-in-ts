@@ -2,8 +2,9 @@
 
 /// <reference types="node" />
 
-import { readFileSync, writeFileSync } from 'fs';
+import { createWriteStream, readFileSync } from 'fs';
 import { argv } from 'process';
+import { Writable } from 'stream';
 import compile, { CompileParams, ScalarEntry } from './codegen';
 
 class CliError extends Error {}
@@ -160,10 +161,11 @@ const main = async () => {
     encoding: 'utf8',
   }).toString();
   const document = compile(source, params);
-  await writeFileSync(
-    params.destinationPath === '-' ? process.stdout.fd : params.destinationPath,
-    document,
-  );
+  const writable: Writable =
+    params.destinationPath === '-'
+      ? process.stdout
+      : createWriteStream(params.destinationPath, 'utf8');
+  writable.write(document, 'utf-8');
 };
 
 main();
