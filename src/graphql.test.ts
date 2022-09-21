@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from './testing/vitest';
 import {
   GraphQLString,
   LiteralOrVariable,
-  RecursivelyMergeSpreads,
+  PreprocessSelection,
   Result,
   Selection,
 } from './graphql';
@@ -54,7 +54,7 @@ describe('Selection', () => {
 });
 
 describe('Result', () => {
-  it('infers the response type of a query', () => {
+  it('processes a simple selection', () => {
     const typedQuery = graphql('Query')({
       user: {
         username: true,
@@ -65,15 +65,16 @@ describe('Result', () => {
         { title: true, content: [{ maxLength: 300 }, true], status: true },
       ],
     });
+    type Result1 = Result<typeof typedQuery>;
     expectType<
-      Result<typeof typedQuery>,
+      Result1,
       To.BeAssignableTo<{
         user: { username: string; nickname: string | null };
         myPosts: { title: string; content: string; status: 'DRAFT' | 'PUBLIC' | 'ARCHIVED' }[];
       }>
     >();
   });
-  it('infers the response type of a callable query', () => {
+  it('processes a callback selection', () => {
     const typedQuery = graphql('Query', { author: 'String' })(($) => ({
       posts: [
         { author: $.author },
@@ -82,14 +83,15 @@ describe('Result', () => {
         },
       ],
     }));
+    type Result1 = Result<typeof typedQuery>;
     expectType<
-      Result<typeof typedQuery>,
+      Result1,
       To.BeAssignableTo<{
         posts: { title: string }[];
       }>
     >();
   });
-  it('merges fragment spreads', () => {
+  it('processes a selection with fragment spreads', () => {
     const typedQuery = graphql('Query')({
       user: {
         username: true,
@@ -117,10 +119,10 @@ describe('Result', () => {
       },
     });
 
-    type MergedQuery = RecursivelyMergeSpreads<typeof typedQuery>;
+    type PreprocessedQuery = PreprocessSelection<typeof typedQuery>;
 
     expectType<
-      MergedQuery,
+      PreprocessedQuery,
       To.BeAssignableTo<{
         user: Tuple<
           unknown,
@@ -171,6 +173,113 @@ describe('Result', () => {
       }>
     >();
   });
+  it('processes a selection with fragments with type conditions', () => {
+    const typedQuery = graphql('Query')({
+      feed: {
+        __typename: true,
+        '...': {
+          // Expect "id" to be selected on Comment.
+          id: true,
+        },
+        author: { username: true },
+        '... on Comment': {
+          content: true,
+          author: [
+            // Note that `author` on parent is without arguments (like {...})
+            // and `author` on Comment is with arguments (like [{}, {...}]).
+            // Expect selection entries of different shape can be merged without
+            // any problem.
+            {},
+            {
+              nickname: true,
+            },
+          ],
+          post: {
+            title: true,
+          },
+        },
+        '... as ...2': {
+          // Current limitation: selections from the spread parent are not inherited.
+          __typename: true,
+          id: true,
+          author: { username: true },
+
+          // Expect Post fields to appear in the result.
+          '... on Post': {
+            title: true,
+            content: true,
+          },
+
+          // Current limitation: cannot give an alias to fragments with type conditions
+          // '... on Post as ...3': {
+          //   content: true,
+          // },
+        },
+      },
+    });
+    type PreprocessedQuery = PreprocessSelection<typeof typedQuery>;
+    expectType<
+      PreprocessedQuery,
+      To.BeAssignableTo<{
+        feed: Tuple<
+          {},
+          {
+            id: Tuple<{}, true>;
+            author: Tuple<{}, { username: Tuple<{}, true> }>;
+            '... on Post': Tuple<
+              {},
+              {
+                id: Tuple<{}, true>;
+                author: Tuple<{}, { username: Tuple<{}, true> }>;
+                title: Tuple<{}, true>;
+                content: Tuple<{}, true>;
+              }
+            >;
+            '... on Comment': Tuple<
+              {},
+              {
+                id: Tuple<{}, true>;
+                author: Tuple<{}, { username: Tuple<{}, true>; nickname: Tuple<{}, true> }>;
+                content: Tuple<{}, true>;
+                post: Tuple<{}, { title: Tuple<{}, true> }>;
+              }
+            >;
+          }
+        >;
+      }>
+    >();
+
+    // Test type narrowing works as expected.
+    // Note that the statements are wrapped in an immediately-GCed function so
+    // that they can be tested without actually being executed.
+    (result: Result<typeof typedQuery>) => {
+      const feedItem = result.feed[0];
+      if (feedItem.__typename === 'Post') {
+        expectType<
+          typeof feedItem,
+          To.BeAssignableTo<{
+            id: number;
+            author: { username: string };
+            title: string;
+            content: string;
+          }>
+        >();
+        feedItem;
+      }
+      if (feedItem.__typename === 'Comment') {
+        expectType<
+          typeof feedItem,
+          To.BeAssignableTo<{
+            id: number;
+            author: { username: string; nickname: string | null };
+            content: string;
+            post: { title: string };
+          }>
+        >();
+        feedItem;
+      }
+    };
+  });
 });
 
 describe('compileGraphQL', () => {
@@ -182,7 +291,7 @@ describe('compileGraphQL', () => {
     },
   ): TResult => ({} as TResult);
 
-  it('can compile a basic query', () => {
+  it('compiles a simple query', () => {
     expect(
       compileGraphQL('query')({
         user: {
@@ -236,6 +345,46 @@ query {
     `.trim(),
     );
   });
+  it('compiles fragments with type conditions', () => {
+    expect(
+      compileGraphQL('query')({
+        feed: {
+          '... as 1': {
+            id: true,
+          },
+          '... as 2': {
+            id: true,
+            '... on Comment': {
+              '...': {
+                content: true,
+              },
+              post: { title: true },
+            },
+            '... on Post': {
+              title: true,
+            },
+          },
+        },
+      }),
+    ).toEqual(
+      `
+query {
+  feed {
+    id
+    ... on Comment {
+      post {
+        title
+      }
+      content
+    }
+    ... on Post {
+      title
+    }
+  }
+}
+    `.trim(),
+    );
+  });
   it('throws an Error if it got fragments with conflicting arguments', () => {
     expect(() => {
       compileGraphQL('query')({
@@ -249,7 +398,7 @@ query {
     }).toThrowError('Cannot merge fragments. Saw conflicting arguments');
   });
 
-  it('can compile a variable of type list', () => {
+  it('compiles a variable of type list', () => {
     const compiled = compileGraphQL('mutation', { inputs: '[MutatePostInput!]!' })(($) => ({
       bulkMutatePosts: [{ inputs: $.inputs }, { id: true }],
     }));
@@ -299,17 +448,23 @@ mutation($inputs: [MutatePostInput!]!) {
     });
     expectType<typeof result, To.BeAssignableTo<{ bulkMutatePosts: { id: number }[] }>>();
   });
-  it('can compile a variable of input', () => {
+  it('compiles a variable of input', () => {
     const compiled = compileGraphQL('mutation', { input: 'LoginInput!' })(($) => ({
-      login: [{ input: $.input }, { token: true, user: { username: true } }],
+      login: [
+        { input: $.input },
+        { __typename: true, '... on LoginSuccess': { token: true, user: { username: true } } },
+      ],
     }));
     expect(compiled).toEqual(
       `
 mutation($input: LoginInput!) {
   login(input: $input) {
-    token
-    user {
-      username
+    __typename
+    ... on LoginSuccess {
+      token
+      user {
+        username
+      }
     }
   }
 }
@@ -323,9 +478,14 @@ mutation($input: LoginInput!) {
         input: { username: 'alice', password: 'zxcvbn' },
       },
     });
-    expectType<
-      typeof result,
-      To.BeAssignableTo<{ login: { token: string; user: { username: string } } }>
-    >();
+
+    ({ login }: typeof result) => {
+      if (login.__typename === 'LoginSuccess') {
+        expectType<
+          typeof login,
+          To.BeAssignableTo<{ token: string; user: { username: string } }>
+        >();
+      }
+    };
   });
 });

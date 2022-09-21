@@ -4,8 +4,11 @@
   "description": "A type-safe way to write GraphQL.",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
-  "bin": "dist/compileGraphqlSchema.js",
+  "bin": "dist/cli.js",
   "types": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "graphql",
     "typescript"
@@ -33,8 +36,11 @@
     "check": "npm run check:prettier && npm run check:eslint && node typecheck.mjs",
     "check:prettier": "prettier ./src --check",
     "check:eslint": "eslint ./src",
-    "schema": "node node_modules/typescript/bin/tsc -p tsconfig.cli.json && node ./dist/compileGraphqlSchema.js ./src/testing/schema.graphql ./src/testing/schema.ts --import-path \"../graphql\" && eslint ./src/testing/schema.ts --fix &&  prettier ./src/testing/schema.ts --write",
-    "build": "rimraf dist && node node_modules/typescript/bin/tsc -p tsconfig.cjs.json && node node_modules/typescript/bin/tsc -p tsconfig.esm.json && node node_modules/typescript/bin/tsc -p tsconfig.cli.json",
+    "schema": "node node_modules/typescript/bin/tsc -p tsconfig.cli.json && node ./dist/cli.js ./src/testing/schema.graphql ./src/testing/schema.ts --config schema.config.json",
+    "build": "rimraf dist && npm run build:cjs && npm run build:esm && npm run build:cli",
+    "build:cjs": "node node_modules/typescript/bin/tsc -p tsconfig.bundle.cjs.json",
+    "build:esm": "node node_modules/typescript/bin/tsc -p tsconfig.bundle.esm.json",
+    "build:cli": "node node_modules/typescript/bin/tsc -p tsconfig.cli.json",
     "test": "vitest"
   },
   "author": "ykiu",

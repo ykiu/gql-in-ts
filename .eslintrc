@@ -17,5 +17,14 @@
     "@typescript-eslint/ban-types": "off",
     "@typescript-eslint/no-explicit-any": "off"
   },
-  "overrides": []
+  "overrides": [
+    {
+      "files": [
+        "src/testing/schema.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/no-unused-vars": "off"
+      }
+    }
+  ]
 }

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { expect, test } from 'vitest';
+import { expect, test } from './testing/vitest';
 import { compileGraphQL, graphql, Result, GraphQLString } from './testing/schema';
 
 declare const fetch: any;
@@ -86,6 +86,29 @@ test('', () => {
     'content as longContent': [{ maxLength: 4000 }, true],
     'content as shortContent': [{ maxLength: 40 }, true],
   });
+
+  const feedFragment = graphql('FeedItem')({
+    __typename: true,
+    id: true,
+    author: { username: true },
+    '... on Comment': {
+      content: true,
+      post: { title: true },
+    },
+    '... on Post': {
+      title: true,
+      content: true,
+    },
+  });
+
+  const processFeedItem = (feedItem: Result<typeof feedFragment>) => {
+    if (feedItem.__typename === 'Comment') {
+      // The type of feedItem is Comment in this block.
+    } else if (feedItem.__typename === 'Post') {
+      // The type of feedItem is Post in this block.
+    }
+  };
+
   const postDetailFragment = graphql('Post')({
     id: true,
     content: true,

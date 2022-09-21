@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {},
+  "exclude": [
+    "**/*.test.ts",
+    "**/testing",
+    "src/codegen.ts",
+    "src/cli.ts"
+  ]
+}

@@ -6,6 +6,7 @@ schema {
 type Query {
   user: User!
   posts(author: String): [Post!]!
+  feed: [FeedItem!]!
 }
 
 type User {
@@ -15,13 +16,18 @@ type User {
   avatar(width: Int, height: Int): String
 }
 
+interface FeedItem {
+  id: Int!
+  author: User!
+}
+
 enum PostStatus {
   DRAFT
   PUBLIC
   ARCHIVED
 }
 
-type Post {
+type Post implements FeedItem {
   id: Int!
   author: User!
   title: String!
@@ -29,14 +35,27 @@ type Post {
   status: PostStatus!
 }
 
+type Comment implements FeedItem {
+  id: Int!
+  author: User!
+  content(maxLength: Int): String!
+  post: Post!
+}
+
 input LoginInput {
   username: String!
   password: String!
 }
 
-type LoginPayload {
+union LoginPayload = LoginSuccess | LoginError
+
+type LoginSuccess {
   token: String!
   user: User!
+}
+
+type LoginError {
+  message: String!
 }
 
 type Mutation {
@@ -48,4 +67,9 @@ input MutatePostInput {
   id: Int
   title: String!
   content: String!
+}
+
+# Ensure interfaces without implementations won't break the generated code.
+interface StrayInterface {
+  foo: String
 }

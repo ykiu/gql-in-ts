@@ -1,0 +1,9 @@
+{
+  "importPath": "../graphql",
+  "scalars": [
+    {
+      "graphql": "DateTime",
+      "typescript": "Date"
+    }
+  ]
+}

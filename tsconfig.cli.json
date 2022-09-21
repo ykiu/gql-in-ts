@@ -3,12 +3,10 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "CommonJS",
-    "types": [
-      "node"
-    ],
+    "types": [],
     "outDir": "dist",
   },
   "include": [
-    "./src/compileGraphqlSchema.ts"
+    "./src/cli.ts"
   ],
 }
