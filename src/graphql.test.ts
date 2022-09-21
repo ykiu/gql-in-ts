@@ -1,13 +1,7 @@
 /* eslint-disable @typescript-eslint/no-namespace */
 import { describe, expect, it } from './testing/vitest';
-import {
-  GraphQLString,
-  LiteralOrVariable,
-  PreprocessSelection,
-  Result,
-  Selection,
-} from './graphql';
-import { Mutation, Query, graphql, compileGraphQL } from './testing/schema';
+import { LiteralOrVariable, PreprocessSelection, Selection } from './graphql';
+import { Mutation, Query, graphql, compileGraphQL, GraphQLString, Result } from './testing/schema';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function expectType<TActual extends TExpected, TExpected>() {
