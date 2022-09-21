@@ -552,9 +552,12 @@ export type OutputCompositeTypeMap = {
 export type InputTypeMap = {
   String: String;
   Int: Int;
+  PostStatus: PostStatus;
   LoginInput: LoginInput;
   MutatePostInput: MutatePostInput;
   Boolean: Boolean;
+  __TypeKind: __TypeKind;
+  __DirectiveLocation: __DirectiveLocation;
 };
 
 export const graphql = makeGraphql<OutputCompositeTypeMap, InputTypeMap>();

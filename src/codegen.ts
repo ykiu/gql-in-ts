@@ -219,7 +219,11 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
         type instanceof GraphQLUnionType
       )
         outputCompositeTypes.push(type);
-      if (type instanceof GraphQLInputObjectType || type instanceof GraphQLScalarType)
+      if (
+        type instanceof GraphQLInputObjectType ||
+        type instanceof GraphQLScalarType ||
+        type instanceof GraphQLEnumType
+      )
         inputTypes.push(type);
     });
     return [
