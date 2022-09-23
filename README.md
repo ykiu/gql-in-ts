@@ -1,3 +1,5 @@
+<a href="https://github.com/ykiu/gql-in-ts"><img src="./logo-dist.svg" style="width: 320px; max-width: 100%; aspect-ratio: 364.3 / 160" alt="gql-in-ts logo" /></a>
+
 # gql-in-ts
 
 [![npm](https://img.shields.io/npm/v/gql-in-ts)](https://www.npmjs.com/package/gql-in-ts/) ![](https://github.com/ykiu/gql-in-ts/actions/workflows/ci.yaml/badge.svg)

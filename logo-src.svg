@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="54.728 98.426 364.281 160" xmlns="http://www.w3.org/2000/svg" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <style bx:fonts="Red Hat Display">@import url(https://fonts.googleapis.com/css2?family=Red+Hat+Display%3Aital%2Cwght%400%2C300%3B0%2C400%3B0%2C500%3B0%2C600%3B0%2C700%3B0%2C800%3B0%2C900%3B1%2C300%3B1%2C400%3B1%2C500%3B1%2C600%3B1%2C700%3B1%2C800%3B1%2C900&amp;display=swap);</style>
+  </defs>
+  <rect x="70.728" y="114.426" width="128" height="128" style="fill: rgb(255, 255, 255); stroke: rgb(204, 204, 204);"/>
+  <text style="fill: rgb(225, 0, 152); font-family: &quot;Red Hat Display&quot;; font-size: 38px; font-weight: 600; white-space: pre;" x="104.745" y="188.686">GQL</text>
+  <text style="fill: rgb(204, 204, 204); font-family: &quot;Red Hat Display&quot;; font-size: 38px; white-space: pre;" x="111.392" y="230.809">in</text>
+  <text style="fill: rgb(49, 120, 198); font-family: &quot;Red Hat Display&quot;; font-size: 38px; font-weight: 600; white-space: pre;" x="141.224" y="230.809">TS</text>
+  <text style="fill: rgb(204, 204, 204); font-family: &quot;Red Hat Display&quot;; font-size: 38px; letter-spacing: -0.5px; word-spacing: -4px; white-space: pre;" transform="matrix(1, 0, 0, 1, -11.456604, -3.90916)"><tspan x="224.655" y="158.395">A type-safe</tspan><tspan x="224.655" dy="0.9em">​</tspan><tspan>way to write</tspan><tspan x="224.655" dy="0.9em">​</tspan></text>
+  <text style="fill: rgb(204, 204, 204); font-family: &quot;Red Hat Display&quot;; font-size: 38px; font-weight: 500; letter-spacing: -0.5px; word-spacing: -4px; white-space: pre;" transform="matrix(1, 0, 0, 1, -11.456604, 72.414482)"><tspan x="224.655" y="158.395">GraphQL</tspan><tspan x="224.655" dy="0.9em">​</tspan></text>
+</svg>
