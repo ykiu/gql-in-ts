@@ -42,7 +42,8 @@
     "build:cjs": "node node_modules/typescript/bin/tsc -p tsconfig.bundle.cjs.json",
     "build:esm": "node node_modules/typescript/bin/tsc -p tsconfig.bundle.esm.json",
     "build:cli": "node node_modules/typescript/bin/tsc -p tsconfig.cli.json",
-    "test": "vitest"
+    "test": "vitest",
+    "bump": "node scripts/bump.mjs"
   },
   "author": "ykiu",
   "license": "MIT",

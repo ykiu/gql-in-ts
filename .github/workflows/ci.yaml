@@ -1,11 +1,14 @@
-name: CI
+# Runs various checks against any new code.
+# Creates a GitHub release named nightly, for the sake of testing in external projects.
+
+name: Check
 
 on:
   push:
     branches:
       - '*'
-    tags:
-      - '*'
+    paths-ignore:
+      - '*.md'
 
 jobs:
   build:
@@ -32,12 +35,3 @@ jobs:
           allowUpdates: true
           name: nightly
           tag: nightly
-      - if: github.ref_type == 'tag'
-        uses: ncipollo/release-action@v1.10.0
-        with:
-          artifacts: '*.tgz'
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - if: github.ref_type == 'tag'
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,42 @@
+# Publishes a new version to npm and GitHub releases.
+# Only runs when `version` in package.json has changed in the main branch.
+
+name: Publish
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.5.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3.4.1
+        with:
+          node-version: 18
+          # 'registry-url' is required for 'npm publish'
+          registry-url: 'https://registry.npmjs.org'
+      - id: versions
+        run: |
+          git show HEAD:package.json | node -e "console.log('current_version=' + JSON.parse(require('fs').readFileSync(0)).version)" >> $GITHUB_OUTPUT
+          git show HEAD^1:package.json | node -e "console.log('prev_version=' + JSON.parse(require('fs').readFileSync(0)).version)" >> $GITHUB_OUTPUT
+      - if: steps.versions.outputs.prev_version != steps.versions.outputs.current_version
+        run: |
+          echo "${{ steps.versions.outputs.prev_version }} --> ${{ steps.versions.outputs.current_version }}"
+          npm ci
+          npm run build
+          npm pack
+      - if: steps.versions.outputs.prev_version != steps.versions.outputs.current_version
+        run: |
+          echo "npm publish"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - if: steps.versions.outputs.prev_version != steps.versions.outputs.current_version
+        uses: ncipollo/release-action@v1.10.0
+        with:
+          artifacts: '*.tgz'
+          token: ${{ secrets.GITHUB_TOKEN }}
