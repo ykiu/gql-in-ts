@@ -4,40 +4,27 @@
 
 [![npm](https://img.shields.io/npm/v/gql-in-ts)](https://www.npmjs.com/package/gql-in-ts/) ![](https://github.com/ykiu/gql-in-ts/actions/workflows/ci.yaml/badge.svg)
 
-A type-safe way to write GraphQL. Express queries as plain JavaScript objects and get types inferred by TypeScript.
+A type-safe way to write GraphQL. Express your query as a plain object and leverage the full power of TypeScript to type its response.
 
 <img src="https://user-images.githubusercontent.com/32252655/188314291-69ecbd37-2f11-4445-b493-e57186b3eb90.gif" style="aspect-ratio: 1460 / 474" alt="A screen recording demonstrating how to write a query as a plain JavaScript object." />
 
-## Features
+## Key highlights
 
 ### Seamless development experience
 
-**Update queries without running code generation**. Changes in queries automatically cascade to the relevant types.
+**Update queries without running code generation**. Thanks to text editors' TypeScript support, types are always up to date with queries.
 
-### Minimum setup
+### Near-zero setup
 
-**Use GraphQL without maintaining a complex development setup**. With `gql-in-ts`, queries are 100% pure TypeScript. If your editor understands TypeScript, you'll get real-time type checking and auto-completion for `gql-in-ts` queries without any plugins.
+**Use GraphQL without maintaining a complex development environment**. With `gql-in-ts`, queries are 100% pure TypeScript. Enjoy modern editing experience for GraphQL without messing around with plugins.
 
-### Framework agnostic
+### Portability
 
-**Work with your favorite stack**. At its core, `gql-in-ts` is a `JSON.stringify()` for GraphQL. Whether you're using React, Vue, vanilla, or even a non-browser runtime -- `gql-in-ts` will fit right in.
-
-## Background
-
-In a TypeScript project, it is typical to employ code generation to obtain type information from GraphQL queries. This approach, while it does a great job at ensuring type safety, comes with some pain points including:
-
-- You'll have to run code generation every time you change queries.
-- You'll often get poor support from the text editor while editing GraphQL. You have to install plugins that understand GraphQL to enable features like syntax highlighting or auto-completion.
-
-`gql-in-ts` attempts to solve these problems in a distinct approach: expressing GraphQL queries as plain TypeScript objects.
-
-With `gql-in-ts`, you run code generation _only when the schema changes_. Since schemas tend to change less often than queries, you'll need to run code generation less frequently than in the case of the mainstream approach.
-
-In `gql-in-ts`, your queries are plain TypeScript code. You'll get support from your text editor without extra plugins.
+**Build an app with the stack of your choice**. With React, Vue, or other UI libraries/frameworks – whether it runs on a browser or a non-browser runtime – `gql-in-ts` will Just Work™.
 
 ## Getting started
 
-Currently TypeScript 4.4 thru 4.8 is supported.
+`gql-in-ts` supports and is [tested with](./typecheck.mjs) TypeScript 4.4 thru 4.8.
 
 Install the library:
 
