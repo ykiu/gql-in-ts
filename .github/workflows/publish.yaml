@@ -32,7 +32,7 @@ jobs:
           npm pack
       - if: steps.versions.outputs.prev_version != steps.versions.outputs.current_version
         run: |
-          echo "npm publish"
+          npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - if: steps.versions.outputs.prev_version != steps.versions.outputs.current_version
