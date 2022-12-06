@@ -7,6 +7,10 @@
   "bin": "dist/cli.js",
   "types": "dist/types/index.d.ts",
   "homepage": "https://github.com/ykiu/gql-in-ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ykiu/gql-in-ts.git"
+  },
   "files": [
     "dist"
   ],
