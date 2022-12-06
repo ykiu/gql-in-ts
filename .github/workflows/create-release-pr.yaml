@@ -1,0 +1,31 @@
+# Bumps up the patch version, edits README.md, and opens a PR.
+
+name: Create release PR
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.5.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3.4.1
+        with:
+          node-version: 18
+      - run: npm run bump
+      - run: git switch -c release
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Release"
+      - run: git push -f -u origin release
+      - run: gh pr create --title "Release" --body "" || true
+        # || true to silence errors, since gh pr errors when there's already an open PR for the branch.
+        env:
+          GH_TOKEN: ${{ github.token }}
