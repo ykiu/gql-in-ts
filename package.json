@@ -20,8 +20,8 @@
   ],
   "devDependencies": {
     "@types/node": "^18.0.6",
-    "@typescript-eslint/eslint-plugin": "^5.30.6",
-    "@typescript-eslint/parser": "^5.30.6",
+    "@typescript-eslint/eslint-plugin": "^5.46.0",
+    "@typescript-eslint/parser": "^5.46.0",
     "eslint": "^8.20.0",
     "eslint-config-prettier": "^8.5.0",
     "prettier": "^2.7.1",
@@ -30,8 +30,9 @@
     "ts4.5": "npm:typescript@4.5",
     "ts4.6": "npm:typescript@4.6",
     "ts4.7": "npm:typescript@4.7",
-    "ts4.8": "npm:typescript@4.8.0-dev.20220723",
-    "typescript": "^4.8.0-dev.20220723",
+    "ts4.8": "npm:typescript@4.8",
+    "ts4.9": "npm:typescript@4.9",
+    "typescript": "^4.9.0",
     "vitest": "^0.18.1"
   },
   "scripts": {

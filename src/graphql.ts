@@ -291,18 +291,35 @@ type ResultForOutputObjectType<
   TOutputObjectType extends OutputObjectType,
   TSelection extends Selection<TOutputObjectType>,
 > =
-  | {
+  | ({
       [TKey in keyof TSelection as TKey extends AliasKey<string, infer TAlias>
         ? TAlias // Transform "foo as bar" to "bar"
         : TKey extends '__type'
         ? never // Remove the key if it is "__type". The "__type" key is added by the graphql() function
         : // so that the Result type can determine the schema type of a query without explicit user input.
         TKey extends TypedFragmentKey
-        ? never // Remove the key if it matches the pattern of fragment type conditions.
+        ? never // Remove the key if it matches the pattern of fragment type conditions (i.e. `... on ${string}`).
         : TKey]: TKey extends '__typename'
         ? keyof TSelection extends infer K
           ? Exclude<
-              ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>>, // Selection without alias
+              // Exclude subtype names from __typename.
+              //
+              // Say there's a union of A and B and one is querying a field on A:
+              //
+              // { __typename: true, '... on A': { fieldSpecificToA: true } }
+              //
+              // Without special-casing __typename, the above query roughly yields the
+              // following union type:
+              //
+              // | { __typename: 'A' | 'B'; } // ----------------------------- Union candidate 1
+              // | { __typename: 'A'; fieldSpecificToA: <some value>; } // --- Union candidate 2
+              //
+              // The above type is hardly useless because one cannot discriminate
+              // union candidates based on the value of __typename.
+              // To be able to use __typename as a tag for telling apart the union
+              // constituents, __typename of union candidate 1 have to be narrowed
+              // down to just 'B'. The below code makes it happen.
+              ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>>, // This is the default result to start with.
               K extends TypedFragmentKey
                 ? TOutputObjectType[K] extends {
                     type: { __typename: { type: Predicate<infer T> } };
@@ -317,7 +334,19 @@ type ResultForOutputObjectType<
         : TKey extends keyof TOutputObjectType
         ? ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>> // Selection without alias
         : never;
-    }
+    } extends infer TResult // Let the above type TResult and do post processing on it.
+      ? // Flatten type conditions.
+        // This has the effect of removing union constituents with __typename: never.
+        // In some versions of TypeScript (at least 4.8-beta thru 4.8.4 inclusive),
+        // { __typename: never } is not ruled out by the `if (obj.__typename === <type name>)`
+        // check. By "flatmap"ping over `__typename` candidates, objects whose
+        // __typename is never are eliminated.
+        TResult extends { __typename: infer U } // If it has __typename...
+        ? U extends unknown // For each candidate of __typename...
+          ? TResult // Yield TResult
+          : never
+        : TResult // If TResult does not have __typename, yield it as is.
+      : never)
 
   // Handle each type condition.
   | (keyof TSelection extends infer TKey
