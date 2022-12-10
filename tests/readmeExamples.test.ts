@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { expect, test } from './testing/vitest';
-import { compileGraphQL, graphql, Result, GraphQLString } from './testing/schema';
+import { expect, test } from './vitest';
+import { compileGraphQL, graphql, Result, GraphQLString } from './schema';
 
 declare const fetch: any;
 
