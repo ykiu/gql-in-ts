@@ -1,6 +1,6 @@
 {
   "name": "gql-in-ts",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "A type-safe way to write GraphQL.",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
