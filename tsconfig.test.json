@@ -6,7 +6,7 @@
   },
   "include": [],
   "files": [
-    "src/graphql.test.ts",
-    "src/readmeExamples.test.ts",
+    "tests/graphql.test.ts",
+    "tests/readmeExamples.test.ts",
   ]
 }

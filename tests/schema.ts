@@ -7,7 +7,7 @@ import {
   makeGraphql,
   makeCompileGraphQL,
   makeDefineVariables,
-} from '../graphql';
+} from '../src';
 
 type Int = Predicate<number>;
 type Float = Predicate<number>;
@@ -562,5 +562,5 @@ export type InputTypeMap = {
 
 export const graphql = makeGraphql<OutputCompositeTypeMap, InputTypeMap>();
 export const compileGraphQL = makeCompileGraphQL<InputTypeMap, Schema>();
-export type { Result, Selection, GraphQLString } from '../graphql';
+export type { Result, Selection, GraphQLString } from '../src';
 export const defineVariables = makeDefineVariables<InputTypeMap>();

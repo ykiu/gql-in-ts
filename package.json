@@ -12,7 +12,8 @@
     "url": "https://github.com/ykiu/gql-in-ts.git"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "keywords": [
     "graphql",
@@ -42,7 +43,7 @@
     "check": "npm run check:prettier && npm run check:eslint && node ./scripts/typecheck.mjs",
     "check:prettier": "prettier ./src --check",
     "check:eslint": "eslint ./src",
-    "schema": "node node_modules/typescript/bin/tsc -p tsconfig.cli.json && node ./dist/cli.js ./src/testing/schema.graphql ./src/testing/schema.ts --config schema.config.json",
+    "schema": "node node_modules/typescript/bin/tsc -p tsconfig.cli.json && node ./dist/cli.js ./tests/schema.graphql ./tests/schema.ts --config schema.config.json",
     "build": "rimraf dist && npm run build:cjs && npm run build:esm && npm run build:cli",
     "build:cjs": "node node_modules/typescript/bin/tsc -p tsconfig.bundle.cjs.json",
     "build:esm": "node node_modules/typescript/bin/tsc -p tsconfig.bundle.esm.json",

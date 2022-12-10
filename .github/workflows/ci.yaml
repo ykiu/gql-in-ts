@@ -23,7 +23,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build
-      - run: npm run schema && git diff --exit-code src/testing/schema.ts
+      - run: npm run schema && git diff --exit-code tests/schema.ts
       - run: npm test
       - run: npm pack
       - run: git tag -f nightly
