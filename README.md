@@ -4,7 +4,7 @@
 
 [![npm](https://img.shields.io/npm/v/gql-in-ts)](https://www.npmjs.com/package/gql-in-ts/) ![](https://github.com/ykiu/gql-in-ts/actions/workflows/ci.yaml/badge.svg)
 
-A type-safe way to write GraphQL. Express your query as a plain object and leverage the full power of TypeScript to type its response.
+A type-safe way to write GraphQL. Express your query as a plain object. The response gets fully typed. Automatically.
 
 <img src="https://user-images.githubusercontent.com/32252655/188314291-69ecbd37-2f11-4445-b493-e57186b3eb90.gif" style="aspect-ratio: 1460 / 474" alt="A screen recording demonstrating how to write a query as a plain JavaScript object." />
 
@@ -12,15 +12,15 @@ A type-safe way to write GraphQL. Express your query as a plain object and lever
 
 ### Seamless development experience
 
-**Update queries without running code generation**. Thanks to text editors' TypeScript support, types are always up to date with queries.
+**Update queries without running code generation**. Types are inferred from queries. They are always in sync.
 
 ### Near-zero setup
 
-**Use GraphQL without maintaining a complex development environment**. With `gql-in-ts`, queries are 100% pure TypeScript. Enjoy modern editing experience for GraphQL without messing around with plugins.
+**Use GraphQL without maintaining a complex development environment**. With `gql-in-ts`, queries are 100% pure TypeScript. No more messing around with plugins.
 
 ### Portability
 
-**Build an app with the stack of your choice**. With React, Vue, or other UI libraries/frameworks – whether it runs on a browser or a non-browser runtime – `gql-in-ts` will Just Work™.
+**Build apps with the tools you already love**. `gql-in-ts` will Just Work™.
 
 ## Getting started
 
