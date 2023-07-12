@@ -18,7 +18,7 @@ A type-safe way to write GraphQL. Express your query as a plain object. Keep you
 
 ## Getting started
 
-`gql-in-ts` supports TypeScript 4.4 thru 4.9.
+`gql-in-ts` supports TypeScript 4.4 thru 5.1.
 
 Install the library:
 

@@ -314,7 +314,7 @@ type ResultForOutputObjectType<
               // | { __typename: 'A' | 'B'; } // ----------------------------- Union candidate 1
               // | { __typename: 'A'; fieldSpecificToA: <some value>; } // --- Union candidate 2
               //
-              // The above type is hardly useless because one cannot discriminate
+              // The above type is hardly useful because one cannot discriminate
               // union candidates based on the value of __typename.
               // To be able to use __typename as a tag for telling apart the union
               // constituents, __typename of union candidate 1 have to be narrowed

@@ -4,12 +4,17 @@ import ts4_6 from 'ts4.6';
 import ts4_7 from 'ts4.7';
 import ts4_8 from 'ts4.8';
 import ts4_9 from 'ts4.9';
+import ts5_0 from 'ts5.0';
+import ts5_1 from 'ts5.1';
 import * as path from 'path';
 import { readFileSync } from 'fs';
 
 const CONFIG_FILE_PATH = './tsconfig.test.json';
 
+// This script runs tsc of different versions programatically.
+// Most of the source code is taken from this issue comment:
 // https://github.com/Microsoft/TypeScript/issues/6387#issuecomment-169739615
+
 const readFile = (path) => readFileSync(path, { encoding: 'utf-8' });
 
 // Having one version per line is handy when toggling versions to test.
@@ -21,6 +26,8 @@ const diagnosticsCount = [
   ts4_7,
   ts4_8,
   ts4_9,
+  ts5_0,
+  ts5_1
 ].map(
   (ts) => {
   const readConfigResult = ts.readConfigFile(CONFIG_FILE_PATH, readFile);
