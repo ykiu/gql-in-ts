@@ -4,23 +4,17 @@
 
 [![npm](https://img.shields.io/npm/v/gql-in-ts)](https://www.npmjs.com/package/gql-in-ts/) ![](https://github.com/ykiu/gql-in-ts/actions/workflows/ci.yaml/badge.svg)
 
-A type-safe way to write GraphQL. Express your query as a plain object. The response gets fully typed. Automatically.
+A type-safe way to write GraphQL. Express your query as a plain object. Keep your code safe with the power of TypeScript.
 
-<img src="https://user-images.githubusercontent.com/32252655/188314291-69ecbd37-2f11-4445-b493-e57186b3eb90.gif" style="aspect-ratio: 1460 / 474" alt="A screen recording demonstrating how to write a query as a plain JavaScript object." />
+<img src="https://user-images.githubusercontent.com/32252655/188314291-69ecbd37-2f11-4445-b493-e57186b3eb90.gif" style="aspect-ratio: 1460 / 474" alt="A screen recording demonstrating what it looks like to write a query with gql-in-ts." />
 
-## Key highlights
+## Features
 
-### Seamless development experience
+**Straightforward** — Tired of maintaining a complex development environment with loads of plugins/extensions? `gql-in-ts` is a tiny library that comes with carefully-designed TypeScript type definitions. It requires no changes to your existing build process, yet it guarantees the correctness of your GraphQL queries with the help of the TypeScript compiler.
 
-**Update queries without running code generation**. Types are inferred from queries. They are always in sync.
+**Ergonomic** — Most existing GraphQL client solutions work by generating TypeScript code from GraphQL queries. `gql-in-ts`, in contrast, relies on TypeScript type inference to keep queries and types in sync, eliminating the need for code generation.
 
-### Near-zero setup
-
-**Use GraphQL without maintaining a complex development environment**. With `gql-in-ts`, queries are 100% pure TypeScript. No more messing around with plugins.
-
-### Portability
-
-**Build apps with the tools you already love**. `gql-in-ts` will Just Work™.
+**Portable** — Being agnostic of the runtime or view framework, `gql-in-ts` will Just Work™ in any ES5+ environment.
 
 ## Getting started
 
@@ -44,7 +38,7 @@ Now you are all set!
 
 ### The `graphql` function
 
-The generated module exports a function named `graphql`, which helps to write typed GraphQL queries.
+The generated module exports a function named `graphql`. Use it to write GraphQL operations:
 
 ```ts
 import { graphql } from './schema';
@@ -64,13 +58,7 @@ const query = graphql('Query')({
 });
 ```
 
-The `graphql` function returns the last argument as is. It is essentially an identity function that looks like this:
-
-```ts
-const graphql = () => (arg) => arg;
-```
-
-The true value of `graphql` lies in its type definition. By wrapping your query with `graphql`, you'll get suppport from TypeScript like completion and type checking.
+The `graphql` function returns your query without doing any processing on it. However, its type signagures do enforce type checking, allowing TypeScript-compatible editors to provide instant feedback and auto-completion.
 
 You can split up a large query into smaller pieces, much like you do with GraphQL fragments:
 
@@ -93,7 +81,7 @@ const query = graphql('Query')({
 
 ### The `Result` type
 
-Use the `Result` type for typing the data that's returned from the server for the query you wrote:
+Use the `Result` type for typing the response for the query:
 
 ```ts
 import { Result } from './schema';
@@ -112,12 +100,9 @@ type QueryResult = Result<typeof query>;
 // }
 ```
 
-**`Result` is the heart and soul of `gql-in-ts`.**
-It maps the query to the type of the response for that query. `Result` achieves this by relying on the TypeScript ability to do complex transformations such as [mapping object properties](https://www.typescriptlang.org/docs/handbook/2/mapped-types.html) and [making conditions](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html) as part of type checking.
-
 ### The `compileGraphQL` function
 
-Compile the query into string by using `compileGraphQL`:
+As mentioned earlier, the `graphql` function returns the given query unmodified. As your query is a plain JavaScript object, you'll need to convert it to a real GraphQL query before sending it to the server. Do so by using `compileGraphQL`:
 
 ```ts
 import { compileGraphQL } from './schema';
@@ -137,7 +122,7 @@ expect(compiled).toEqual(
 );
 ```
 
-Think of `compileGraphQL` as a JSON.stringify() for GraphQL. It transforms a plain JavaScript object that looks like a GraphQL into an actual GraphQL string.
+Think of `compileGraphQL` as a JSON.stringify() for GraphQL.
 
 While `compileGraphQL` returns an ordinary string at runtime, its return type in TypeScript is a string subtype named `GraphQLString`. `GraphQLString`, in addition to all the string properties, has one useful property: the `Result` for the compiled query. You can extract the `Result` by using [the infer keyword in a conditional type](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#inferring-within-conditional-types):
 
@@ -160,7 +145,7 @@ const compiled = compileGraphQL('query')({
 
 ### Making a request
 
-`gql-in-ts` is agnostic of the transport layer: it's your responsibility to send requests to your backend server. That said, most GraphQL endpoints are [served over HTTP](https://graphql.org/learn/serving-over-http/), so let me include an example demonstrating how to send a typed GraphQL query using `fetch`:
+`gql-in-ts` is agnostic of the transport layer: it's your responsibility to send requests to your backend server. That said, most GraphQL endpoints are [served over HTTP](https://graphql.org/learn/serving-over-http/), so here I include an example demonstrating how to send a typed GraphQL query using `fetch`:
 
 ```ts
 import { GraphQLString } from './schema';
@@ -240,7 +225,7 @@ const processFeedItem = (feedItem: Result<typeof feedFragment>) => {
 
 You can "merge" fragments. This is a powerful feature that allows to colocate fragments and the code that depends on them, maximizing maintainability of both the code and the query.
 
-Say you want to render a post. You've split the rendering function into two parts where the first one is for the header of a post and the second one for the main text. The former is only interested in the post's `title` and `author`:
+Suppose you want to render a post. You've split the rendering function into two parts where the first one is for the header of a post and the second one for the main text. The former is only interested in the post's `title` and `author`:
 
 ```ts
 import { graphql, Result } from './schema';
