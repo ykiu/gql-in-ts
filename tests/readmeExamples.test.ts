@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { expect, test } from './vitest';
-import { compileGraphQL, graphql, Result, GraphQLString } from './schema';
+import { compileGraphQL, graphql, Resolved, GraphQLString } from './schema';
 
 declare const fetch: any;
 
@@ -32,7 +32,7 @@ test('', () => {
     posts: [{ author: 'me' }, postFragment],
   });
 
-  type QueryResult = Result<typeof query__v1>;
+  type QueryResult = Resolved<typeof query__v1>;
   // QueryResult would be inferred as:
   // {
   //   user: {
@@ -58,7 +58,8 @@ test('', () => {
   }
 }`,
   );
-  type MyResult = typeof compiled__v1 extends GraphQLString<infer TResult, never> ? TResult : never;
+
+  type MyResult = Resolved<typeof compiled__v1>;
 
   const compiled__v2 = compileGraphQL('query')({
     user: userFragment,
@@ -66,7 +67,7 @@ test('', () => {
   });
 
   const makeGraphQLRequest = async <TResult>(
-    compiled: GraphQLString<TResult, never>,
+    compiled: GraphQLString<TResult>,
   ): Promise<TResult> => {
     const response = await fetch('http://example.com/graphql', {
       method: 'POST',
@@ -101,7 +102,7 @@ test('', () => {
     },
   });
 
-  const processFeedItem = (feedItem: Result<typeof feedFragment>) => {
+  const processFeedItem = (feedItem: Resolved<typeof feedFragment>) => {
     if (feedItem.__typename === 'Comment') {
       // The type of feedItem is Comment in this block.
     } else if (feedItem.__typename === 'Post') {

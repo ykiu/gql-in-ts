@@ -562,5 +562,5 @@ export type InputTypeMap = {
 
 export const graphql = makeGraphql<OutputCompositeTypeMap, InputTypeMap>();
 export const compileGraphQL = makeCompileGraphQL<InputTypeMap, Schema>();
-export type { Result, Selection, GraphQLString } from '../src';
+export type { Resolved, Selection, GraphQLString } from '../src';
 export const defineVariables = makeDefineVariables<InputTypeMap>();
