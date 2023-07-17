@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-namespace */
-import { describe, expect, it } from './vitest';
-import { LiteralOrVariable, PreprocessSelection, Selection } from '../src/graphql';
-import { Mutation, Query, graphql, compileGraphQL, GraphQLString, Result } from './schema';
+import { describe, expect, it, test } from './vitest';
+import {
+  LiteralOrVariable,
+  NormalizeSelection,
+  Resolve,
+  Resolved,
+  Selection,
+  VariableReferenceValues,
+} from '../src/graphql';
+import { Mutation, Query, graphql, compileGraphQL, GraphQLString, InputTypeMap } from './schema';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function expectType<TActual extends TExpected, TExpected>() {
@@ -12,12 +19,37 @@ function expectType<TActual extends TExpected, TExpected>() {
 namespace To {
   export type BeAssignableTo<T> = T;
   export type TakeGraphQLVariableValues<TVariableValues> = {
-    __takeVariableValues?: (values: TVariableValues) => void;
+    __resolved?: (values: TVariableValues) => void;
   };
   export type TakeArguments<TArgs extends unknown[]> = (...args: TArgs) => void;
 }
 
 type Tuple<A, B> = { 0: A; 1: B };
+
+describe('VariableReferenceValues', () => {
+  test('Int', () => {
+    expectType<
+      { foo: number },
+      To.BeAssignableTo<VariableReferenceValues<InputTypeMap, { foo: 'Int!' }>>
+    >();
+    expectType<
+      // @ts-expect-error: string is not assignable to Int!.
+      { foo: string },
+      To.BeAssignableTo<VariableReferenceValues<InputTypeMap, { foo: 'Int!' }>>
+    >();
+  });
+  test('InputObjectType', () => {
+    expectType<
+      { input: { username: string; password: string } },
+      To.BeAssignableTo<VariableReferenceValues<InputTypeMap, { input: 'LoginInput!' }>>
+    >();
+    expectType<
+      // @ts-expect-error: password is missing.
+      { input: { username: string } },
+      To.BeAssignableTo<VariableReferenceValues<InputTypeMap, { input: 'LoginInput!' }>>
+    >();
+  });
+});
 
 describe('Selection', () => {
   it('constrains a selection to match the schema', () => {
@@ -59,7 +91,7 @@ describe('Result', () => {
         { title: true, content: [{ maxLength: 300 }, true], status: true },
       ],
     });
-    type Result1 = Result<typeof typedQuery>;
+    type Result1 = Resolved<typeof typedQuery>;
     expectType<
       Result1,
       To.BeAssignableTo<{
@@ -77,7 +109,7 @@ describe('Result', () => {
         },
       ],
     }));
-    type Result1 = Result<typeof typedQuery>;
+    type Result1 = Resolved<typeof typedQuery>;
     expectType<
       Result1,
       To.BeAssignableTo<{
@@ -113,10 +145,10 @@ describe('Result', () => {
       },
     });
 
-    type PreprocessedQuery = PreprocessSelection<typeof typedQuery>;
+    type Normalized = NormalizeSelection<Omit<typeof typedQuery, '__resolved'>>;
 
     expectType<
-      PreprocessedQuery,
+      Normalized,
       To.BeAssignableTo<{
         user: Tuple<
           unknown,
@@ -135,7 +167,7 @@ describe('Result', () => {
       }>
     >();
 
-    type Result1 = Result<typeof typedQuery>;
+    type Result1 = Resolved<typeof typedQuery>;
 
     expectType<
       Result1,
@@ -148,14 +180,16 @@ describe('Result', () => {
       }>
     >();
 
-    type Result2 = Result<{
-      __type: Query;
-      posts: {
-        title: true;
-        content: true;
-      };
-      '... as ...1': Selection<Query>;
-    }>;
+    type Result2 = Resolve<
+      Query,
+      {
+        posts: {
+          title: true;
+          content: true;
+        };
+        '... as ...1': Selection<Query>;
+      }
+    >;
 
     expectType<
       Result2,
@@ -211,9 +245,10 @@ describe('Result', () => {
         },
       },
     });
-    type PreprocessedQuery = PreprocessSelection<typeof typedQuery>;
+
+    type Normalized = NormalizeSelection<Omit<typeof typedQuery, '__resolved'>>;
     expectType<
-      PreprocessedQuery,
+      Normalized,
       To.BeAssignableTo<{
         feed: Tuple<
           {},
@@ -246,7 +281,7 @@ describe('Result', () => {
     // Test type narrowing works as expected.
     // Note that the statements are wrapped in an immediately-GCed function so
     // that they can be tested without actually being executed.
-    (result: Result<typeof typedQuery>) => {
+    (result: Resolved<typeof typedQuery>) => {
       const feedItem = result.feed[0];
       if (feedItem.__typename === 'Post') {
         expectType<

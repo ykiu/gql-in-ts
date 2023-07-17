@@ -50,8 +50,8 @@ type OutputObjectTypeEntry = {
   type: OutputType;
 };
 
-type ObjectTypeNamespace = Record<string, OutputObjectType>;
-type InputTypeNamespace = Record<string, InputType>;
+type ObjectTypeMap = Record<string, OutputObjectType>;
+type InputTypeMap = Record<string, InputType>;
 
 // ------------------------------
 // Types that represent variables
@@ -90,56 +90,54 @@ type VariableReference<TType extends InputType, TDefinition = VariableReferenceD
   __definition: TDefinition;
 };
 
-type VariableReferenceDefinition<
-  TInputTypeNamespace extends InputTypeNamespace = InputTypeNamespace,
-> =
-  | NonNullableReference<TInputTypeNamespace, any>
-  | ListReference<TInputTypeNamespace, any>
-  | (keyof TInputTypeNamespace & string);
+type VariableReferenceDefinition<TInputTypeMap extends InputTypeMap = InputTypeMap> =
+  | NonNullableReference<TInputTypeMap, any>
+  | ListReference<TInputTypeMap, any>
+  | (keyof TInputTypeMap & string);
 
 type NonNullableReference<
-  TInputTypeNamespace extends InputTypeNamespace,
-  TDefinition extends VariableReferenceDefinition<TInputTypeNamespace>,
+  TInputTypeMap extends InputTypeMap,
+  TDefinition extends VariableReferenceDefinition<TInputTypeMap>,
 > = `${TDefinition}!`;
 
 type ListReference<
-  TInputTypeNamespace extends InputTypeNamespace,
-  TDefinition extends VariableReferenceDefinition<TInputTypeNamespace>,
+  TInputTypeMap extends InputTypeMap,
+  TDefinition extends VariableReferenceDefinition<TInputTypeMap>,
 > = `[${TDefinition}]`;
 
 type UnwrapNullable<T extends InputType> = T extends Nullable<infer U> ? U : T;
 
 type VariableReferenceType<
-  TInputTypeNamespace extends InputTypeNamespace,
-  TDefinition extends VariableReferenceDefinition<TInputTypeNamespace>,
-> = TDefinition extends keyof TInputTypeNamespace
-  ? Nullable<TInputTypeNamespace[TDefinition]>
-  : TDefinition extends ListReference<TInputTypeNamespace, infer T>
-  ? Nullable<List<VariableReferenceType<TInputTypeNamespace, T>>>
-  : TDefinition extends NonNullableReference<TInputTypeNamespace, infer T>
-  ? UnwrapNullable<VariableReferenceType<TInputTypeNamespace, T>>
+  TInputTypeMap extends InputTypeMap,
+  TDefinition extends VariableReferenceDefinition<TInputTypeMap>,
+> = TDefinition extends keyof TInputTypeMap
+  ? Nullable<TInputTypeMap[TDefinition]>
+  : TDefinition extends ListReference<TInputTypeMap, infer T>
+  ? Nullable<List<VariableReferenceType<TInputTypeMap, T>>>
+  : TDefinition extends NonNullableReference<TInputTypeMap, infer T>
+  ? UnwrapNullable<VariableReferenceType<TInputTypeMap, T>>
   : never;
 
 export type VariableReferences<
-  TInputTypeNamespace extends InputTypeNamespace,
-  TVariableDefinitions extends VariableDefinitions<TInputTypeNamespace>,
+  TInputTypeMap extends InputTypeMap,
+  TVariableDefinitions extends VariableDefinitions<TInputTypeMap>,
 > = {
   [TKey in keyof TVariableDefinitions]: VariableReference<
-    VariableReferenceType<TInputTypeNamespace, TVariableDefinitions[TKey]>
+    VariableReferenceType<TInputTypeMap, TVariableDefinitions[TKey]>
   >;
 };
 
-type VariableDefinitions<TInputTypeNamespace extends InputTypeNamespace> = Record<
+type VariableDefinitions<TInputTypeMap extends InputTypeMap> = Record<
   string,
-  VariableReferenceDefinition<TInputTypeNamespace>
+  VariableReferenceDefinition<TInputTypeMap>
 >;
 
 export type VariableReferenceValues<
-  TInputTypeNamespace extends InputTypeNamespace,
-  TVariableDefinitions extends VariableDefinitions<TInputTypeNamespace>,
+  TInputTypeMap extends InputTypeMap,
+  TVariableDefinitions extends VariableDefinitions<TInputTypeMap>,
 > = InputObjectTypeValue<{
   [TKey in keyof TVariableDefinitions]: {
-    type: VariableReferenceType<TInputTypeNamespace, TVariableDefinitions[TKey]>;
+    type: VariableReferenceType<TInputTypeMap, TVariableDefinitions[TKey]>;
   };
 }>;
 
@@ -189,28 +187,29 @@ type SelectionType<TOutputType extends OutputType> = TOutputType extends OutputO
 // ----------------------------------------
 
 /**
- * `Result<TSelection>`
- *
- * Infers the type of data that would be returned for `TSelection`.
- *
- * `Result<TSelection, TOutputObjectType>`
- *
- * You can optionally pass in the second type parameter `TOutputObjectType` to explicitly
- * specify which type in the schema `TSelection` is for. By default this parameter
- * is automatically inferred so you rarely need to use the second parameter.
+ * Embeds the resolved type for a query/mutation/subscription.
  */
-// This is a helper type for providing convenient features like automatic inference
-// of TOutputObjectType and unwrapping of function-style selections for *external users*:
-// internal types should rely on ResultForOutputObjectType for simplicity and for
-// better compiler performance.
-export type Result<
-  TSelection extends MaybeCallableSelection<Selection<OutputObjectType>>,
-  TOutputObjectType extends OutputObjectType = never,
-> = TSelection extends MaybeCallableSelection<infer TRealSelection>
-  ? TSelection extends HasOutputObjectType<infer InferredOutputObjectType>
-    ? ResultForNormalizedSelection<InferredOutputObjectType, PreprocessSelection<TRealSelection>>
-    : ResultForNormalizedSelection<TOutputObjectType, PreprocessSelection<TRealSelection>>
+type HasResolved<TVariableDefinitions, TResolved> = {
+  __resolved?: (variables: TVariableDefinitions) => TResolved;
+};
+
+/**
+ * Extracts the resolved type for a query/mutation/subscription.
+ */
+export type Resolved<T extends HasResolved<never, unknown>> = T extends HasResolved<
+  never,
+  infer TResult
+>
+  ? TResult
   : never;
+
+/**
+ * Resolves a query/mutation/subscription.
+ */
+export type Resolve<
+  TOutputObjectType extends OutputObjectType,
+  TSelection extends Selection<OutputObjectType>,
+> = ResolveNormalizedSelection<TOutputObjectType, NormalizeSelection<TSelection>>;
 
 /**
  * Preprocesses selections to simplify subsequent processing.
@@ -221,14 +220,11 @@ export type Result<
  * 2. Recursively merges fragment spreads.
  *
  * @example
- * type T1 = PreprocessSelection<{ a: true, '...': { b: true, '...': { c: true } } }>;
+ * type T1 = NormalizeSelection<{ a: true, '...': { b: true, '...': { c: true } } }>;
  * type T2 = { a: [{}, true], b: [{}, true], c: [{}, true] };
  * // T1 == T2
  */
-export type PreprocessSelection<TSelection extends Selection<OutputObjectType>> =
-  NormalizeSelection<TSelection>;
-
-type NormalizeSelection<TSelection extends Selection<OutputObjectType>> = MergeSpreads<{
+export type NormalizeSelection<TSelection extends Selection<OutputObjectType>> = MergeSpreads<{
   [TKey in keyof TSelection]: TSelection[TKey] extends SelectionEntryShape<
     infer TSelectionArgument,
     infer TSubSelection
@@ -254,47 +250,33 @@ type NormalizeSelection<TSelection extends Selection<OutputObjectType>> = MergeS
       TSelection[TKey];
 }>;
 
-/** A trivial helper for unwrapping a getter-style selection */
-type MaybeCallableSelection<TSelection extends Selection<OutputObjectType>> =
-  | TSelection
-  | (($: never) => TSelection);
-
 /**
- * A trivial wrapper around ResultForOutputObjectType that accepts NormalizeSelection<TSelection>.
+ * Ensures NormalizedSelection<Selection> is assignable to Selection.
  */
 // NormalizeSelection<Selection> is actually a Selection but TS cannot statically determine
 // it is, so use a conditional type to "dynamically" narrow down the type of the selection.
-type ResultForNormalizedSelection<
+type ResolveNormalizedSelection<
   TOutputObjectType extends OutputObjectType,
   TSelection,
 > = TSelection extends Selection<TOutputObjectType>
-  ? ResultForOutputObjectType<TOutputObjectType, TSelection> extends infer T
-    ? { [K in keyof T]: T[K] } // Force TypeScript to evaluate the properties
+  ? ResolveSelection<TOutputObjectType, TSelection> extends infer T
+    ? { [K in keyof T]: T[K] } // Bonus: for better hover hints, force TypeScript to evaluate the properties.
     : never
-  : {
-      [k in ERROR_FAILED_OBTAIN_TYPE_FROM_SELECTION]: TSelection;
-    };
-
-type ERROR_FAILED_OBTAIN_TYPE_FROM_SELECTION =
-  'The Result<> type failed to infer which type your query is for. This typically happens when you forgot to wrap your query with the graphql() function exported from your schema.ts. Either wrap your query like graphql("YourTypeName")({ /* your query */ }), or if you cannot do that for whatever reasons, explicitly specify the target type like Result<typeof yourQuery, YourTypeName>';
-
-type HasOutputObjectType<TOutputObjectType extends OutputObjectType = OutputObjectType> = {
-  __type?: TOutputObjectType;
-};
+  : never;
 
 /**
- * Core implementation of result type inference.
+ * Core implementation of type inference.
  */
 // Iterates over the keys of TSelection and delegate handling of each property to the relevant type.
 // Also handles type condition of fragments.
-type ResultForOutputObjectType<
+type ResolveSelection<
   TOutputObjectType extends OutputObjectType,
   TSelection extends Selection<TOutputObjectType>,
 > =
   | ({
       [TKey in keyof TSelection as TKey extends AliasKey<string, infer TAlias>
         ? TAlias // Transform "foo as bar" to "bar"
-        : TKey extends '__type'
+        : TKey extends '__resolved'
         ? never // Remove the key if it is "__type". The "__type" key is added by the graphql() function
         : // so that the Result type can determine the schema type of a query without explicit user input.
         TKey extends TypedFragmentKey
@@ -319,7 +301,7 @@ type ResultForOutputObjectType<
               // To be able to use __typename as a tag for telling apart the union
               // constituents, __typename of union candidate 1 have to be narrowed
               // down to just 'B'. The below code makes it happen.
-              ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>>, // This is the default result to start with.
+              ResolveSelectionEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>>, // This is the default result to start with.
               K extends TypedFragmentKey
                 ? TOutputObjectType[K] extends {
                     type: { __typename: { type: Predicate<infer T> } };
@@ -330,9 +312,9 @@ type ResultForOutputObjectType<
             >
           : never //
         : TKey extends AliasKey<infer TSchemaKey>
-        ? ResultEntry<TOutputObjectType[TSchemaKey], NonNullable<TSelection[TKey]>> // Selection with alias
+        ? ResolveSelectionEntry<TOutputObjectType[TSchemaKey], NonNullable<TSelection[TKey]>> // Selection with alias
         : TKey extends keyof TOutputObjectType
-        ? ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>> // Selection without alias
+        ? ResolveSelectionEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>> // Selection without alias
         : never;
     } extends infer TResult // Let the above type TResult and do post processing on it.
       ? // Flatten type conditions.
@@ -351,7 +333,7 @@ type ResultForOutputObjectType<
   // Handle each type condition.
   | (keyof TSelection extends infer TKey
       ? TKey extends TypedFragmentKey
-        ? ResultEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>>
+        ? ResolveSelectionEntry<TOutputObjectType[TKey], NonNullable<TSelection[TKey]>>
         : never
       : never);
 
@@ -424,14 +406,14 @@ type UnionToIntersection<T> = (T extends unknown ? (v: T) => void : never) exten
   ? U
   : never;
 
-type ResultEntry<
+type ResolveSelectionEntry<
   TOutputObjectTypeEntry extends OutputObjectTypeEntry,
   TSelectionEntry extends SelectionEntry<any> | undefined,
 > = TSelectionEntry extends SelectionEntryShape<any, infer TSelection>
-  ? ResultType<TOutputObjectTypeEntry['type'], TSelection>
+  ? ResolveSelectionType<TOutputObjectTypeEntry['type'], TSelection>
   : never;
 
-type ResultType<
+type ResolveSelectionType<
   TInputType extends InputType,
   TSelectionType extends SelectionType<any>,
 > = TInputType extends Predicate<infer U>
@@ -440,24 +422,22 @@ type ResultType<
     : never
   : TInputType extends OutputObjectType
   ? TSelectionType extends Selection<TInputType>
-    ? ResultForOutputObjectType<TInputType, TSelectionType> extends infer T // Object
+    ? ResolveSelection<TInputType, TSelectionType> extends infer T // Object
       ? { [K in keyof T]: T[K] } // Force TypeScript to evaluate the properties
       : never
     : never
   : TInputType extends List<infer TWrapped>
-  ? ResultType<TWrapped, TSelectionType>[] // Array of another type
+  ? ResolveSelectionType<TWrapped, TSelectionType>[] // Array of another type
   : TInputType extends Nullable<infer TWrapped>
-  ? ResultType<TWrapped, TSelectionType> | null // Nullable of another type
+  ? ResolveSelectionType<TWrapped, TSelectionType> | null // Nullable of another type
   : never;
 
 // -----------------------------------------------------------------
 // Types for expressing compiled queries, mutations or subscriptions
 // -----------------------------------------------------------------
 
-export type GraphQLString<TResult, TVariableValues> = string & {
-  __result?: TResult;
-  __takeVariableValues?: (variableValues: TVariableValues) => void;
-};
+export type GraphQLString<TResolved, TVariableValues = never> = string &
+  HasResolved<TVariableValues, TResolved>;
 
 // -----------------------------------------------------------
 // Functions for compiling queries, mutations or subscriptions
@@ -626,29 +606,29 @@ const compileSelectionEntry = <TOutputObjectTypeEntry extends OutputObjectTypeEn
 };
 
 const constructVariableReference = <
-  TInputTypeNamespace extends InputTypeNamespace,
-  TDefinition extends VariableReferenceDefinition<TInputTypeNamespace>,
+  TInputTypeMap extends InputTypeMap,
+  TDefinition extends VariableReferenceDefinition<TInputTypeMap>,
 >(
   definition: TDefinition,
-): VariableReference<VariableReferenceType<TInputTypeNamespace, TDefinition>> => ({
+): VariableReference<VariableReferenceType<TInputTypeMap, TDefinition>> => ({
   __definition: definition,
 });
 
 const constructVariableReferences = <
-  TInputTypeNamespace extends InputTypeNamespace,
-  TVariableDefinitions extends VariableDefinitions<TInputTypeNamespace>,
+  TInputTypeMap extends InputTypeMap,
+  TVariableDefinitions extends VariableDefinitions<TInputTypeMap>,
 >(
   variables: TVariableDefinitions,
 ) => {
   const variableEntries = objectEntries(variables);
   const wrappedVariableEntries = variableEntries.map(
-    ([k, v]) => [k, constructVariableReference<TInputTypeNamespace, typeof v>(v)] as const,
+    ([k, v]) => [k, constructVariableReference<TInputTypeMap, typeof v>(v)] as const,
   );
   const nameByVariable = new Map(wrappedVariableEntries.map(([k, v]) => [v, k]));
 
   return {
     variableObjects: objectFromEntries(wrappedVariableEntries) as VariableReferences<
-      TInputTypeNamespace,
+      TInputTypeMap,
       TVariableDefinitions
     >,
     variableNameByVariableObject: nameByVariable,
@@ -656,24 +636,45 @@ const constructVariableReferences = <
 };
 
 export const makeCompileGraphQL = <
-  TInputTypeNamespace extends InputTypeNamespace,
+  TInputTypeMap extends InputTypeMap,
   TSchema extends Schema,
 >() => {
+  // Overload 1: selection without variables
+  function fn<TType extends keyof TSchema & string>(
+    type: TType,
+  ): <TSelection extends Selection<TSchema[TType]>>(
+    selection: TSelection,
+  ) => GraphQLString<Resolve<TSchema[TType], TSelection>>;
+
+  // Overload 2: selection with variables
   function fn<
     TType extends keyof TSchema & string,
-    TVariables extends VariableDefinitions<TInputTypeNamespace>,
+    TVariables extends VariableDefinitions<TInputTypeMap>,
+  >(
+    type: TType,
+    variables: TVariables,
+  ): <TSelection extends Selection<TSchema[TType]>>(
+    getSelection: ($: VariableReferences<TInputTypeMap, TVariables>) => TSelection,
+  ) => GraphQLString<
+    Resolve<TSchema[TType], TSelection>,
+    VariableReferenceValues<TInputTypeMap, TVariables>
+  >;
+
+  function fn<
+    TType extends keyof TSchema & string,
+    TVariables extends VariableDefinitions<TInputTypeMap>,
   >(type: TType, variables?: TVariables) {
     return <TSelection extends Selection<TSchema[TType]>>(
       selection:
         | TSelection
-        | ((v: VariableReferences<TInputTypeNamespace, NonNullable<TVariables>>) => TSelection),
+        | ((v: VariableReferences<TInputTypeMap, NonNullable<TVariables>>) => TSelection),
     ): GraphQLString<
-      Result<TSelection, TSchema[TType]>,
-      VariableReferenceValues<TInputTypeNamespace, TVariables>
+      Resolve<TSchema[TType], TSelection>,
+      VariableReferenceValues<TInputTypeMap, TVariables>
     > => {
       const cleanedVariables = (variables || {}) as NonNullable<TVariables>;
       const { variableObjects, variableNameByVariableObject } = constructVariableReferences<
-        TInputTypeNamespace,
+        TInputTypeMap,
         NonNullable<TVariables>
       >(cleanedVariables);
       const variableEntries = objectEntries(cleanedVariables);
@@ -697,39 +698,50 @@ export const makeCompileGraphQL = <
 // ---------------------------------------------------------
 
 export const makeGraphql = <
-  TObjectTypeNamespace extends ObjectTypeNamespace,
-  TInputTypeNamespace extends InputTypeNamespace,
+  TObjectTypeMap extends ObjectTypeMap,
+  TInputTypeMap extends InputTypeMap,
 >() => {
   // Overload 1: selection without variables
-  function fn<TTypeName extends keyof TObjectTypeNamespace>(
+  function fn<TTypeName extends keyof TObjectTypeMap>(
     type: TTypeName,
-  ): <TSelection extends Selection<TObjectTypeNamespace[TTypeName]>>(
+  ): <TSelection extends Selection<TObjectTypeMap[TTypeName]>>(
     selection: TSelection,
-  ) => TSelection & HasOutputObjectType<TObjectTypeNamespace[TTypeName]>;
+  ) => TSelection & HasResolved<never, Resolve<TObjectTypeMap[TTypeName], TSelection>>;
 
   // Overload 2: selection with variables
   function fn<
-    TTypeName extends keyof TObjectTypeNamespace,
-    TVariables extends VariableDefinitions<TInputTypeNamespace>,
+    TTypeName extends keyof TObjectTypeMap,
+    TVariables extends VariableDefinitions<TInputTypeMap>,
   >(
     type: TTypeName,
     variables: TVariables,
   ): <
     TGetSelection extends (
-      v: VariableReferences<TInputTypeNamespace, TVariables>,
-    ) => Selection<TObjectTypeNamespace[TTypeName]>,
+      v: VariableReferences<TInputTypeMap, TVariables>,
+    ) => Selection<TObjectTypeMap[TTypeName]>,
   >(
     getSselection: TGetSelection,
-  ) => TGetSelection & HasOutputObjectType<TObjectTypeNamespace[TTypeName]>;
+  ) => TGetSelection &
+    HasResolved<never, Resolve<TObjectTypeMap[TTypeName], ReturnType<TGetSelection>>>;
 
   // Actual implementation
-  function fn() {
-    return (selectionOrGetSelection: any) => selectionOrGetSelection;
+  function fn<
+    TType extends keyof TObjectTypeMap & string,
+    TVariables extends VariableDefinitions<TInputTypeMap>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  >(type: TType, variables?: TVariables) {
+    return <
+      TSelection extends
+        | Selection<TObjectTypeMap[TType]>
+        | ((v: VariableReferences<TInputTypeMap, TVariables>) => Selection<TObjectTypeMap[TType]>),
+    >(
+      selection: TSelection,
+    ) => selection;
   }
   return fn;
 };
 
 export const makeDefineVariables =
-  <TInputTypeNamespace extends InputTypeNamespace>() =>
-  <TVariables extends VariableDefinitions<TInputTypeNamespace>>(variables: TVariables) =>
+  <TInputTypeMap extends InputTypeMap>() =>
+  <TVariables extends VariableDefinitions<TInputTypeMap>>(variables: TVariables) =>
     variables;
