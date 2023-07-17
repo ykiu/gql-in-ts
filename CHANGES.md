@@ -1,5 +1,10 @@
 # CHANGES
 
+## v0.2.2
+
+- Release ([#18](https://github.com/ykiu/gql-in-ts/pull/18))
+
+
 ## v0.2.1
 
 - Fix a bug where fragment spreads are not resolved ([#19](https://github.com/ykiu/gql-in-ts/pull/19))
