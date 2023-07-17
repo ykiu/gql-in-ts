@@ -189,8 +189,9 @@ type SelectionType<TOutputType extends OutputType> = TOutputType extends OutputO
 /**
  * Embeds the resolved type for a query/mutation/subscription.
  */
-type HasResolved<TVariableDefinitions, TResolved> = {
-  __resolved?: (variables: TVariableDefinitions) => TResolved;
+export type HasResolved<TVariableDefinitions, TResolved> = {
+  // Ensure HasResolved is a valid Selection.
+  __resolved?: { 0: { _: (variables: TVariableDefinitions) => TResolved }; 1: {} };
 };
 
 /**
