@@ -1,5 +1,9 @@
 # CHANGES
 
+## v0.2.1
+
+- Fix a bug where fragment spreads are not resolved ([#19](https://github.com/ykiu/gql-in-ts/pull/19))
+
 ## v0.2.0
 
 - Introduce the Resolved utility type (breaking) ([#17](https://github.com/ykiu/gql-in-ts/pull/17))
