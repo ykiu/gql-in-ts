@@ -37,7 +37,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - if: steps.versions.outputs.prev_version != steps.versions.outputs.current_version
         run: |
-          git tag v${{ steps.versions.outputs.current_version }} && git push v${{ steps.versions.outputs.current_version }}
+          git tag v${{ steps.versions.outputs.current_version }} && git push origin v${{ steps.versions.outputs.current_version }}
       - if: steps.versions.outputs.prev_version != steps.versions.outputs.current_version
         uses: ncipollo/release-action@v1.10.0
         with:
