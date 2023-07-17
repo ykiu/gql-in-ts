@@ -1,5 +1,10 @@
 # CHANGES
 
+## v0.2.0
+
+- Introduce the Resolved utility type (breaking) ([#17](https://github.com/ykiu/gql-in-ts/pull/17))
+- Test against TypeScript 5.0 and 5.1 ([#16](https://github.com/ykiu/gql-in-ts/pull/16))
+
 ## v0.1.8
 
 - Fix broken source map ([#13](https://github.com/ykiu/gql-in-ts/pull/13))
