@@ -7,6 +7,7 @@ import {
   Resolved,
   Selection,
   VariableReferenceValues,
+  HasResolved,
 } from '../src/graphql';
 import { Mutation, Query, graphql, compileGraphQL, GraphQLString, InputTypeMap } from './schema';
 
@@ -18,9 +19,7 @@ function expectType<TActual extends TExpected, TExpected>() {
 /** Readability helpers to be used with expectType() */
 namespace To {
   export type BeAssignableTo<T> = T;
-  export type TakeGraphQLVariableValues<TVariableValues> = {
-    __resolved?: (values: TVariableValues) => void;
-  };
+  export type TakeGraphQLVariableValues<TVariableValues> = HasResolved<TVariableValues, unknown>;
   export type TakeArguments<TArgs extends unknown[]> = (...args: TArgs) => void;
 }
 
@@ -79,7 +78,7 @@ describe('Selection', () => {
   });
 });
 
-describe('Result', () => {
+describe('Resolved', () => {
   it('processes a simple selection', () => {
     const typedQuery = graphql('Query')({
       user: {
@@ -133,7 +132,9 @@ describe('Result', () => {
           },
         ],
       },
-      '... as ...2': {
+
+      // Test if wrapping a subfragment with graphql()() is harmless.
+      '... as ...2': graphql('Query')({
         posts: [
           { author: 'me' },
           {
@@ -142,7 +143,7 @@ describe('Result', () => {
             },
           },
         ],
-      },
+      }),
     });
 
     type Normalized = NormalizeSelection<Omit<typeof typedQuery, '__resolved'>>;
