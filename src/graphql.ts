@@ -37,10 +37,6 @@ export type List<T extends InputType> = {
 
 type OutputType = OutputObjectType | Predicate | Wrapper<any>;
 
-type Schema = {
-  [key: string]: OutputObjectType;
-};
-
 export type OutputObjectType = {
   [key: string]: OutputObjectTypeEntry;
 };
@@ -197,11 +193,10 @@ export type HasResolved<TVariableDefinitions, TResolved> = {
 /**
  * Extracts the resolved type for a query/mutation/subscription.
  */
-export type Resolved<T extends HasResolved<never, unknown>> = T extends HasResolved<
-  never,
-  infer TResult
->
-  ? TResult
+export type Output<T> = T extends HasResolved<never, infer TResult> ? TResult : never;
+
+export type Input<T> = T extends HasResolved<infer TVariableDefinitions, unknown>
+  ? TVariableDefinitions
   : never;
 
 /**
@@ -433,13 +428,6 @@ type ResolveSelectionType<
   ? ResolveSelectionType<TWrapped, TSelectionType> | null // Nullable of another type
   : never;
 
-// -----------------------------------------------------------------
-// Types for expressing compiled queries, mutations or subscriptions
-// -----------------------------------------------------------------
-
-export type GraphQLString<TResolved, TVariableValues = never> = string &
-  HasResolved<TVariableValues, TResolved>;
-
 // -----------------------------------------------------------
 // Functions for compiling queries, mutations or subscriptions
 // -----------------------------------------------------------
@@ -600,6 +588,7 @@ const compileSelectionEntry = <TOutputObjectTypeEntry extends OutputObjectTypeEn
   return [
     `${indent}${compiledfieldName}${compiledArguments} {`,
     objectEntries(resolveSpreads(subSelection))
+      .filter(([k]) => k !== 'toJSON')
       .map(([k, v]) => compileSelectionEntry(k, v as any, nameByVariable, indentSize + 2))
       .join('\n'),
     `${indent}}`,
@@ -636,64 +625,6 @@ const constructVariableReferences = <
   };
 };
 
-export const makeCompileGraphQL = <
-  TInputTypeMap extends InputTypeMap,
-  TSchema extends Schema,
->() => {
-  // Overload 1: selection without variables
-  function fn<TType extends keyof TSchema & string>(
-    type: TType,
-  ): <TSelection extends Selection<TSchema[TType]>>(
-    selection: TSelection,
-  ) => GraphQLString<Resolve<TSchema[TType], TSelection>>;
-
-  // Overload 2: selection with variables
-  function fn<
-    TType extends keyof TSchema & string,
-    TVariables extends VariableDefinitions<TInputTypeMap>,
-  >(
-    type: TType,
-    variables: TVariables,
-  ): <TSelection extends Selection<TSchema[TType]>>(
-    getSelection: ($: VariableReferences<TInputTypeMap, TVariables>) => TSelection,
-  ) => GraphQLString<
-    Resolve<TSchema[TType], TSelection>,
-    VariableReferenceValues<TInputTypeMap, TVariables>
-  >;
-
-  function fn<
-    TType extends keyof TSchema & string,
-    TVariables extends VariableDefinitions<TInputTypeMap>,
-  >(type: TType, variables?: TVariables) {
-    return <TSelection extends Selection<TSchema[TType]>>(
-      selection:
-        | TSelection
-        | ((v: VariableReferences<TInputTypeMap, NonNullable<TVariables>>) => TSelection),
-    ): GraphQLString<
-      Resolve<TSchema[TType], TSelection>,
-      VariableReferenceValues<TInputTypeMap, TVariables>
-    > => {
-      const cleanedVariables = (variables || {}) as NonNullable<TVariables>;
-      const { variableObjects, variableNameByVariableObject } = constructVariableReferences<
-        TInputTypeMap,
-        NonNullable<TVariables>
-      >(cleanedVariables);
-      const variableEntries = objectEntries(cleanedVariables);
-      const compiledVariableDefinitions = variableEntries.map(([k, v]) => `$${k}: ${v}`).join(', ');
-      const compiledVariablesWithParenth =
-        compiledVariableDefinitions.length > 0 ? `(${compiledVariableDefinitions})` : '';
-      const evaluatedSelection =
-        typeof selection === 'function' ? selection(variableObjects) : selection;
-      return compileSelectionEntry(
-        `${type}${compiledVariablesWithParenth}`,
-        [{}, evaluatedSelection],
-        variableNameByVariableObject,
-      );
-    };
-  }
-  return fn;
-};
-
 // ---------------------------------------------------------
 // Functions for defining quries, mutations or subscriptions
 // ---------------------------------------------------------
@@ -723,7 +654,10 @@ export const makeGraphql = <
   >(
     getSselection: TGetSelection,
   ) => TGetSelection &
-    HasResolved<never, Resolve<TObjectTypeMap[TTypeName], ReturnType<TGetSelection>>>;
+    HasResolved<
+      VariableReferenceValues<TInputTypeMap, TVariables>,
+      Resolve<TObjectTypeMap[TTypeName], ReturnType<TGetSelection>>
+    >;
 
   // Actual implementation
   function fn<
@@ -737,7 +671,34 @@ export const makeGraphql = <
         | ((v: VariableReferences<TInputTypeMap, TVariables>) => Selection<TObjectTypeMap[TType]>),
     >(
       selection: TSelection,
-    ) => selection;
+    ) => {
+      let cache: string;
+      const clone: any =
+        typeof selection === 'function' ? (v: any) => selection(v) : { ...selection };
+      clone.toJSON = () => {
+        if (cache) return cache;
+        const cleanedVariables = (variables || {}) as NonNullable<TVariables>;
+        const { variableObjects, variableNameByVariableObject } = constructVariableReferences<
+          TInputTypeMap,
+          NonNullable<TVariables>
+        >(cleanedVariables);
+        const variableEntries = objectEntries(cleanedVariables);
+        const compiledVariableDefinitions = variableEntries
+          .map(([k, v]) => `$${k}: ${v}`)
+          .join(', ');
+        const compiledVariablesWithParenth =
+          compiledVariableDefinitions.length > 0 ? `(${compiledVariableDefinitions})` : '';
+        const evaluatedSelection =
+          typeof selection === 'function' ? selection(variableObjects) : selection;
+        // For now, the behaviour of toJSON() for types other than Query, Mutation, Subscription is undefined.
+        return (cache = compileSelectionEntry(
+          `${type.toLowerCase()}${compiledVariablesWithParenth}`,
+          [{}, evaluatedSelection as any],
+          variableNameByVariableObject,
+        ));
+      };
+      return clone;
+    };
   }
   return fn;
 };

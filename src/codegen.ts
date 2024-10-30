@@ -246,7 +246,6 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
     `  Nullable,`,
     `  Predicate,`,
     `  makeGraphql,`,
-    `  makeCompileGraphQL,`,
     `  makeDefineVariables,`,
     `} from '${params.importPath}';`,
     '',
@@ -254,8 +253,7 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
 
   const footer = [
     `export const graphql = makeGraphql<OutputCompositeTypeMap, InputTypeMap>();`,
-    `export const compileGraphQL = makeCompileGraphQL<InputTypeMap, Schema>();`,
-    `export type { Resolved, Selection, GraphQLString } from '${params.importPath}';`,
+    `export type { Input, Output, Selection } from '${params.importPath}';`,
     `export const defineVariables = makeDefineVariables<InputTypeMap>();`,
     '',
   ];

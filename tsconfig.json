@@ -13,7 +13,8 @@
     "downlevelIteration": false,
   },
   "include": [
-    "src"
+    "src",
+    "tests"
   ],
   "exclude": []
 }

@@ -4,12 +4,13 @@ import {
   LiteralOrVariable,
   NormalizeSelection,
   Resolve,
-  Resolved,
+  Output,
   Selection,
   VariableReferenceValues,
   HasResolved,
+  Input,
 } from '../src/graphql';
-import { Mutation, Query, graphql, compileGraphQL, GraphQLString, InputTypeMap } from './schema';
+import { Mutation, Query, graphql, InputTypeMap } from './schema';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function expectType<TActual extends TExpected, TExpected>() {
@@ -78,7 +79,7 @@ describe('Selection', () => {
   });
 });
 
-describe('Resolved', () => {
+describe('Output', () => {
   it('processes a simple selection', () => {
     const typedQuery = graphql('Query')({
       user: {
@@ -90,7 +91,7 @@ describe('Resolved', () => {
         { title: true, content: [{ maxLength: 300 }, true], status: true },
       ],
     });
-    type Result1 = Resolved<typeof typedQuery>;
+    type Result1 = Output<typeof typedQuery>;
     expectType<
       Result1,
       To.BeAssignableTo<{
@@ -108,7 +109,7 @@ describe('Resolved', () => {
         },
       ],
     }));
-    type Result1 = Resolved<typeof typedQuery>;
+    type Result1 = Output<typeof typedQuery>;
     expectType<
       Result1,
       To.BeAssignableTo<{
@@ -168,7 +169,7 @@ describe('Resolved', () => {
       }>
     >();
 
-    type Result1 = Resolved<typeof typedQuery>;
+    type Result1 = Output<typeof typedQuery>;
 
     expectType<
       Result1,
@@ -282,7 +283,7 @@ describe('Resolved', () => {
     // Test type narrowing works as expected.
     // Note that the statements are wrapped in an immediately-GCed function so
     // that they can be tested without actually being executed.
-    (result: Resolved<typeof typedQuery>) => {
+    (result: Output<typeof typedQuery>) => {
       const feedItem = result.feed[0];
       if (feedItem.__typename === 'Post') {
         expectType<
@@ -312,27 +313,30 @@ describe('Resolved', () => {
   });
 });
 
-describe('compileGraphQL', () => {
-  const processCompiled = <TResult, TVariableValues>(
+describe('toJSON', () => {
+  const extractCompiled = (value: unknown) => JSON.parse(JSON.stringify(value));
+  const processCompiled = <T>(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _: {
-      compiled: GraphQLString<TResult, TVariableValues>;
-      variables: TVariableValues;
+      query: T;
+      variables: Input<T>;
     },
-  ): TResult => ({} as TResult);
+  ): Output<T> => ({} as Output<T>);
 
   it('compiles a simple query', () => {
     expect(
-      compileGraphQL('query')({
-        user: {
-          username: true,
-          nickname: true,
-        },
-        'posts as myPosts': [
-          { author: 'me' },
-          { title: true, content: [{ maxLength: 300 }, true] },
-        ],
-      }),
+      extractCompiled(
+        graphql('Query')({
+          user: {
+            username: true,
+            nickname: true,
+          },
+          'posts as myPosts': [
+            { author: 'me' },
+            { title: true, content: [{ maxLength: 300 }, true] },
+          ],
+        }),
+      ),
     ).toEqual(
       `
 query {
@@ -348,21 +352,44 @@ query {
     `.trim(),
     );
   });
+  it('compiles a query with nested graphql()', () => {
+    expect(
+      extractCompiled(
+        graphql('Query')({
+          user: graphql('User')({
+            username: true,
+            nickname: true,
+          }),
+        }),
+      ),
+    ).toEqual(
+      `
+query {
+  user {
+    username
+    nickname
+  }
+}
+    `.trim(),
+    );
+  });
   it('recursively merges fragment spreads', () => {
     expect(
-      compileGraphQL('query')({
-        '...': {
+      extractCompiled(
+        graphql('Query')({
           '...': {
-            posts: {
-              'content as shortContent': [{ maxLength: 100 }, true],
-              '... as ...1': { title: true },
+            '...': {
+              posts: {
+                'content as shortContent': [{ maxLength: 100 }, true],
+                '... as ...1': { title: true },
+              },
             },
           },
-        },
-        posts: {
-          content: true,
-        },
-      }),
+          posts: {
+            content: true,
+          },
+        }),
+      ),
     ).toEqual(
       `
 query {
@@ -377,25 +404,27 @@ query {
   });
   it('compiles fragments with type conditions', () => {
     expect(
-      compileGraphQL('query')({
-        feed: {
-          '... as 1': {
-            id: true,
-          },
-          '... as 2': {
-            id: true,
-            '... on Comment': {
-              '...': {
-                content: true,
+      extractCompiled(
+        graphql('Query')({
+          feed: {
+            '... as 1': {
+              id: true,
+            },
+            '... as 2': {
+              id: true,
+              '... on Comment': {
+                '...': {
+                  content: true,
+                },
+                post: { title: true },
               },
-              post: { title: true },
-            },
-            '... on Post': {
-              title: true,
+              '... on Post': {
+                title: true,
+              },
             },
           },
-        },
-      }),
+        }),
+      ),
     ).toEqual(
       `
 query {
@@ -417,22 +446,29 @@ query {
   });
   it('throws an Error if it got fragments with conflicting arguments', () => {
     expect(() => {
-      compileGraphQL('query')({
-        '... as a': {
-          posts: { content: [{ maxLength: 100 }, true] },
-        },
-        '... as b': {
-          posts: { content: [{ maxLength: 200 }, true] },
-        },
-      });
+      extractCompiled(
+        graphql('Query')({
+          '... as a': {
+            posts: { content: [{ maxLength: 100 }, true] },
+          },
+          '... as b': {
+            posts: { content: [{ maxLength: 200 }, true] },
+          },
+        }),
+      );
     }).toThrowError('Cannot merge fragments. Saw conflicting arguments');
   });
 
   it('compiles a variable of type list', () => {
-    const compiled = compileGraphQL('mutation', { inputs: '[MutatePostInput!]!' })(($) => ({
+    // Ensure mutationFragment is callable
+    const mutationFragment = graphql('Mutation', { inputs: '[MutatePostInput!]!' })(($) => ({
       bulkMutatePosts: [{ inputs: $.inputs }, { id: true }],
     }));
-    expect(compiled).toEqual(
+    const query = graphql('Mutation', { inputs: '[MutatePostInput!]!' })(($) => ({
+      '...': mutationFragment({ inputs: $.inputs }),
+    }));
+
+    expect(extractCompiled(query)).toEqual(
       `
 mutation($inputs: [MutatePostInput!]!) {
   bulkMutatePosts(inputs: $inputs) {
@@ -441,37 +477,10 @@ mutation($inputs: [MutatePostInput!]!) {
 }
       `.trim(),
     );
-    expectType<
-      typeof compiled,
-      To.TakeGraphQLVariableValues<{ inputs: [{ title: 'Lorem'; content: 'Ipsum' }] }>
-    >();
-
-    expectType<
-      typeof compiled,
-      To.TakeGraphQLVariableValues<{ inputs: [{ id: 1; title: 'Lorem'; content: 'Ipsum' }] }>
-    >();
-
-    expectType<
-      // @ts-expect-error: Missing a required field "content"
-      typeof compiled,
-      To.TakeGraphQLVariableValues<{ inputs: [{ title: 'Lorem' }] }>
-    >();
-
-    expectType<
-      // @ts-expect-error: Missing a variable "inputs".
-      typeof compiled,
-      To.TakeGraphQLVariableValues<{}>
-    >();
-
-    expectType<
-      // @ts-expect-error: Type of content should be string, but 1 is given.
-      typeof compiled,
-      To.TakeGraphQLVariableValues<{ inputs: [{ title: 'Lorem'; content: 1 }] }>
-    >();
 
     // Ensure types for the variable values and the result are inferred correctly.
     const result = processCompiled({
-      compiled,
+      query,
       variables: {
         inputs: [{ title: 'a', content: 'b' }],
       },
@@ -479,13 +488,13 @@ mutation($inputs: [MutatePostInput!]!) {
     expectType<typeof result, To.BeAssignableTo<{ bulkMutatePosts: { id: number }[] }>>();
   });
   it('compiles a variable of input', () => {
-    const compiled = compileGraphQL('mutation', { input: 'LoginInput!' })(($) => ({
+    const query = graphql('Mutation', { input: 'LoginInput!' })(($) => ({
       login: [
         { input: $.input },
         { __typename: true, '... on LoginSuccess': { token: true, user: { username: true } } },
       ],
     }));
-    expect(compiled).toEqual(
+    expect(extractCompiled(query)).toEqual(
       `
 mutation($input: LoginInput!) {
   login(input: $input) {
@@ -503,7 +512,7 @@ mutation($input: LoginInput!) {
 
     // Ensure types for the variable values and the result are inferred correctly.
     const result = processCompiled({
-      compiled,
+      query,
       variables: {
         input: { username: 'alice', password: 'zxcvbn' },
       },

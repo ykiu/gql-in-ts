@@ -5,7 +5,6 @@ import {
   Nullable,
   Predicate,
   makeGraphql,
-  makeCompileGraphQL,
   makeDefineVariables,
 } from '../src';
 
@@ -561,6 +560,5 @@ export type InputTypeMap = {
 };
 
 export const graphql = makeGraphql<OutputCompositeTypeMap, InputTypeMap>();
-export const compileGraphQL = makeCompileGraphQL<InputTypeMap, Schema>();
-export type { Resolved, Selection, GraphQLString } from '../src';
+export type { Input, Output, Selection } from '../src';
 export const defineVariables = makeDefineVariables<InputTypeMap>();
