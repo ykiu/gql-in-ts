@@ -588,7 +588,6 @@ const compileSelectionEntry = <TOutputObjectTypeEntry extends OutputObjectTypeEn
   return [
     `${indent}${compiledfieldName}${compiledArguments} {`,
     objectEntries(resolveSpreads(subSelection))
-      .filter(([k]) => k !== 'toJSON')
       .map(([k, v]) => compileSelectionEntry(k, v as any, nameByVariable, indentSize + 2))
       .join('\n'),
     `${indent}}`,
@@ -675,28 +674,32 @@ export const makeGraphql = <
       let cache: string;
       const clone: any =
         typeof selection === 'function' ? (v: any) => selection(v) : { ...selection };
-      clone.toJSON = () => {
-        if (cache) return cache;
-        const cleanedVariables = (variables || {}) as NonNullable<TVariables>;
-        const { variableObjects, variableNameByVariableObject } = constructVariableReferences<
-          TInputTypeMap,
-          NonNullable<TVariables>
-        >(cleanedVariables);
-        const variableEntries = objectEntries(cleanedVariables);
-        const compiledVariableDefinitions = variableEntries
-          .map(([k, v]) => `$${k}: ${v}`)
-          .join(', ');
-        const compiledVariablesWithParenth =
-          compiledVariableDefinitions.length > 0 ? `(${compiledVariableDefinitions})` : '';
-        const evaluatedSelection =
-          typeof selection === 'function' ? selection(variableObjects) : selection;
-        // For now, the behaviour of toJSON() for types other than Query, Mutation, Subscription is undefined.
-        return (cache = compileSelectionEntry(
-          `${type.toLowerCase()}${compiledVariablesWithParenth}`,
-          [{}, evaluatedSelection as any],
-          variableNameByVariableObject,
-        ));
-      };
+      Object.defineProperty(clone, 'toJSON', {
+        // Ensure `toJSON` is not picked up by Object.keys(), etc.
+        enumerable: false,
+        value: () => {
+          if (cache) return cache;
+          const cleanedVariables = (variables || {}) as NonNullable<TVariables>;
+          const { variableObjects, variableNameByVariableObject } = constructVariableReferences<
+            TInputTypeMap,
+            NonNullable<TVariables>
+          >(cleanedVariables);
+          const variableEntries = objectEntries(cleanedVariables);
+          const compiledVariableDefinitions = variableEntries
+            .map(([k, v]) => `$${k}: ${v}`)
+            .join(', ');
+          const compiledVariablesWithParenth =
+            compiledVariableDefinitions.length > 0 ? `(${compiledVariableDefinitions})` : '';
+          const evaluatedSelection =
+            typeof selection === 'function' ? selection(variableObjects) : selection;
+          // For now, the behaviour of toJSON() for types other than Query, Mutation, Subscription is undefined.
+          return (cache = compileSelectionEntry(
+            `${type.toLowerCase()}${compiledVariablesWithParenth}`,
+            [{}, evaluatedSelection as any],
+            variableNameByVariableObject,
+          ));
+        },
+      });
       return clone;
     };
   }
