@@ -246,15 +246,12 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
     `  Nullable,`,
     `  Predicate,`,
     `  makeGraphql,`,
-    `  makeDefineVariables,`,
     `} from '${params.importPath}';`,
     '',
   ];
 
   const footer = [
     `export const graphql = makeGraphql<OutputCompositeTypeMap, InputTypeMap>();`,
-    `export type { Input, Output, Selection } from '${params.importPath}';`,
-    `export const defineVariables = makeDefineVariables<InputTypeMap>();`,
     '',
   ];
   return [

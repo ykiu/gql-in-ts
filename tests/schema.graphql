@@ -13,7 +13,7 @@ type User {
   id: Int!
   username: String!
   nickname: String
-  avatar(width: Int, height: Int): String
+  avatar(width: Int, height: Int, size: Int): String
 }
 
 interface FeedItem {

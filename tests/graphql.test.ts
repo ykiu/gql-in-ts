@@ -6,11 +6,10 @@ import {
   Resolve,
   Output,
   Selection,
-  VariableReferenceValues,
   HasResolved,
   Input,
 } from '../src/graphql';
-import { Mutation, Query, graphql, InputTypeMap } from './schema';
+import { Mutation, Query, graphql } from './schema';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function expectType<TActual extends TExpected, TExpected>() {
@@ -25,31 +24,6 @@ namespace To {
 }
 
 type Tuple<A, B> = { 0: A; 1: B };
-
-describe('VariableReferenceValues', () => {
-  test('Int', () => {
-    expectType<
-      { foo: number },
-      To.BeAssignableTo<VariableReferenceValues<InputTypeMap, { foo: 'Int!' }>>
-    >();
-    expectType<
-      // @ts-expect-error: string is not assignable to Int!.
-      { foo: string },
-      To.BeAssignableTo<VariableReferenceValues<InputTypeMap, { foo: 'Int!' }>>
-    >();
-  });
-  test('InputObjectType', () => {
-    expectType<
-      { input: { username: string; password: string } },
-      To.BeAssignableTo<VariableReferenceValues<InputTypeMap, { input: 'LoginInput!' }>>
-    >();
-    expectType<
-      // @ts-expect-error: password is missing.
-      { input: { username: string } },
-      To.BeAssignableTo<VariableReferenceValues<InputTypeMap, { input: 'LoginInput!' }>>
-    >();
-  });
-});
 
 describe('Selection', () => {
   it('constrains a selection to match the schema', () => {
@@ -81,7 +55,7 @@ describe('Selection', () => {
 
 describe('Output', () => {
   it('processes a simple selection', () => {
-    const typedQuery = graphql('Query')({
+    const query = graphql('Query')({
       user: {
         username: true,
         nickname: true,
@@ -91,7 +65,7 @@ describe('Output', () => {
         { title: true, content: [{ maxLength: 300 }, true], status: true },
       ],
     });
-    type Result1 = Output<typeof typedQuery>;
+    type Result1 = Output<typeof query>;
     expectType<
       Result1,
       To.BeAssignableTo<{
@@ -101,7 +75,7 @@ describe('Output', () => {
     >();
   });
   it('processes a callback selection', () => {
-    const typedQuery = graphql('Query', { author: 'String' })(($) => ({
+    const query = graphql('Query', { author: 'String' })(($) => ({
       posts: [
         { author: $.author },
         {
@@ -109,7 +83,7 @@ describe('Output', () => {
         },
       ],
     }));
-    type Result1 = Output<typeof typedQuery>;
+    type Result1 = Output<typeof query>;
     expectType<
       Result1,
       To.BeAssignableTo<{
@@ -118,7 +92,7 @@ describe('Output', () => {
     >();
   });
   it('processes a selection with fragment spreads', () => {
-    const typedQuery = graphql('Query')({
+    const query = graphql('Query')({
       user: {
         username: true,
       },
@@ -147,7 +121,7 @@ describe('Output', () => {
       }),
     });
 
-    type Normalized = NormalizeSelection<Omit<typeof typedQuery, '__resolved'>>;
+    type Normalized = NormalizeSelection<Omit<typeof query, '__resolved'>>;
 
     expectType<
       Normalized,
@@ -169,7 +143,7 @@ describe('Output', () => {
       }>
     >();
 
-    type Result1 = Output<typeof typedQuery>;
+    type Result1 = Output<typeof query>;
 
     expectType<
       Result1,
@@ -204,7 +178,7 @@ describe('Output', () => {
     >();
   });
   it('processes a selection with fragments with type conditions', () => {
-    const typedQuery = graphql('Query')({
+    const query = graphql('Query')({
       feed: {
         __typename: true,
         '...': {
@@ -248,7 +222,7 @@ describe('Output', () => {
       },
     });
 
-    type Normalized = NormalizeSelection<Omit<typeof typedQuery, '__resolved'>>;
+    type Normalized = NormalizeSelection<Omit<typeof query, '__resolved'>>;
     expectType<
       Normalized,
       To.BeAssignableTo<{
@@ -283,7 +257,7 @@ describe('Output', () => {
     // Test type narrowing works as expected.
     // Note that the statements are wrapped in an immediately-GCed function so
     // that they can be tested without actually being executed.
-    (result: Output<typeof typedQuery>) => {
+    (result: Output<typeof query>) => {
       const feedItem = result.feed[0];
       if (feedItem.__typename === 'Post') {
         expectType<
@@ -310,6 +284,29 @@ describe('Output', () => {
         feedItem;
       }
     };
+  });
+});
+
+describe('Input', () => {
+  test('Int', () => {
+    const query = graphql('Query', { foo: 'Int!' })(() => ({ __typename: true }));
+    type Result1 = Input<typeof query>;
+    expectType<{ foo: number }, To.BeAssignableTo<Result1>>();
+    expectType<
+      // @ts-expect-error: string is not assignable to Int!.
+      { foo: string },
+      To.BeAssignableTo<Result1>
+    >();
+  });
+  test('InputObjectType', () => {
+    const mutation = graphql('Mutation', { input: 'LoginInput!' })(() => ({ __typename: true }));
+    type Result1 = Input<typeof mutation>;
+    expectType<{ input: { username: string; password: string } }, To.BeAssignableTo<Result1>>();
+    expectType<
+      // @ts-expect-error: password is missing.
+      { input: { username: string } },
+      To.BeAssignableTo<Result1>
+    >();
   });
 });
 
@@ -487,14 +484,39 @@ mutation($inputs: [MutatePostInput!]!) {
     });
     expectType<typeof result, To.BeAssignableTo<{ bulkMutatePosts: { id: number }[] }>>();
   });
+  it('compiles literals passed to a fragment', () => {
+    const mutationFragment = graphql('Mutation', { inputs: '[MutatePostInput!]!' })(($) => ({
+      bulkMutatePosts: [{ inputs: $.inputs }, { id: true }],
+    }));
+    // Ensure mutationFragment() can take literal values.
+    const mutation = graphql('Mutation')({
+      '...': mutationFragment({ inputs: [{ title: 'a', content: 'b' }] }),
+    });
+
+    expect(extractCompiled(mutation)).toEqual(
+      `
+mutation {
+  bulkMutatePosts(inputs: [{title: "a", content: "b"}]) {
+    id
+  }
+}
+      `.trim(),
+    );
+
+    const result = processCompiled({
+      query: mutation,
+      variables: undefined,
+    });
+    expectType<typeof result, To.BeAssignableTo<{ bulkMutatePosts: { id: number }[] }>>();
+  });
   it('compiles a variable of input', () => {
-    const query = graphql('Mutation', { input: 'LoginInput!' })(($) => ({
+    const mutation = graphql('Mutation', { input: 'LoginInput!' })(($) => ({
       login: [
         { input: $.input },
         { __typename: true, '... on LoginSuccess': { token: true, user: { username: true } } },
       ],
     }));
-    expect(extractCompiled(query)).toEqual(
+    expect(extractCompiled(mutation)).toEqual(
       `
 mutation($input: LoginInput!) {
   login(input: $input) {
@@ -512,7 +534,7 @@ mutation($input: LoginInput!) {
 
     // Ensure types for the variable values and the result are inferred correctly.
     const result = processCompiled({
-      query,
+      query: mutation,
       variables: {
         input: { username: 'alice', password: 'zxcvbn' },
       },

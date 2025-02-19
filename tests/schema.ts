@@ -5,7 +5,6 @@ import {
   Nullable,
   Predicate,
   makeGraphql,
-  makeDefineVariables,
 } from '../src';
 
 type Int = Predicate<number>;
@@ -66,6 +65,7 @@ export type User = {
     arguments: {
       width: { type: Nullable<Int> };
       height: { type: Nullable<Int> };
+      size: { type: Nullable<Int> };
     };
     type: Nullable<String>;
   };
@@ -560,5 +560,3 @@ export type InputTypeMap = {
 };
 
 export const graphql = makeGraphql<OutputCompositeTypeMap, InputTypeMap>();
-export type { Input, Output, Selection } from '../src';
-export const defineVariables = makeDefineVariables<InputTypeMap>();
