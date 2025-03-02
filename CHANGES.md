@@ -1,5 +1,10 @@
 # CHANGES
 
+## v0.3.1
+
+- Release ([#20](https://github.com/ykiu/gql-in-ts/pull/20))
+
+
 ## v0.3.0
 
 - Redesign the public API from the ground up ([#21](https://github.com/ykiu/gql-in-ts/pull/21))
