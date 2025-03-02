@@ -1,5 +1,9 @@
 # CHANGES
 
+## v0.3.0
+
+- Redesign the public API from the ground up ([#21](https://github.com/ykiu/gql-in-ts/pull/21))
+
 ## v0.2.1
 
 - Fix a bug where fragment spreads are not resolved ([#19](https://github.com/ykiu/gql-in-ts/pull/19))
