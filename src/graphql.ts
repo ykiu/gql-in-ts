@@ -617,20 +617,22 @@ export const makeGraphql = <
     type: TTypeName,
     variables: TVariables,
   ): <
-    TGetSelection extends (variables: {
-      [TKey in keyof TVariables]: InputTypeValue<
-        ResolveVariableTemplateLiteral<TInputTypeMap, TVariables[TKey]>
-      >;
-    }) => Selection<TObjectTypeMap[TTypeName]>,
+    TGetSelection extends (
+      variables: InputObjectTypeValue<{
+        [TKey in keyof TVariables]: {
+          type: ResolveVariableTemplateLiteral<TInputTypeMap, TVariables[TKey]>;
+        };
+      }>,
+    ) => Selection<TObjectTypeMap[TTypeName]>,
   >(
     selection: TGetSelection,
   ) => TGetSelection &
     HasResolved<
-      {
-        [TKey in keyof TVariables]: InputTypeValue<
-          ResolveVariableTemplateLiteral<TInputTypeMap, TVariables[TKey]>
-        >;
-      },
+      InputObjectTypeValue<{
+        [TKey in keyof TVariables]: {
+          type: ResolveVariableTemplateLiteral<TInputTypeMap, TVariables[TKey]>;
+        };
+      }>,
       Resolve<TObjectTypeMap[TTypeName], ReturnType<TGetSelection>>
     >;
 
@@ -643,7 +645,7 @@ export const makeGraphql = <
     return <
       TSelection extends
         | Selection<TObjectTypeMap[TType]>
-        | ((variables: {}) => Selection<TObjectTypeMap[TType]>),
+        | ((variables: any) => Selection<TObjectTypeMap[TType]>),
     >(
       selection: TSelection,
     ) => {
