@@ -4,7 +4,7 @@
 
 A lightweight and type-safe GraphQL query builder.
 
-<img src="https://user-images.githubusercontent.com/32252655/253862101-906a209f-5bfa-4e72-af25-fa0967ffc79c.gif" style="aspect-ratio: 850 / 359" alt="A screen recording demonstrating the usage of gql-in-ts." />
+https://github.com/user-attachments/assets/696a82e4-dfa6-4843-ac6b-8126125e61ae
 
 ## Features
 
