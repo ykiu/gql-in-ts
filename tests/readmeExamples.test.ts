@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { expect, test } from './vitest';
-import { compileGraphQL, graphql, Resolved, GraphQLString } from './schema';
+import { graphql } from './schema';
+
+import { Output, Input } from '../src';
 
 declare const fetch: any;
 
@@ -32,8 +34,13 @@ test('', () => {
     posts: [{ author: 'me' }, postFragment],
   });
 
-  type QueryResult = Resolved<typeof query__v1>;
-  // QueryResult would be inferred as:
+  const compiled__v1 = JSON.stringify({ query: query__v2 });
+  expect(compiled__v1).toEqual(
+    '{"query":"query {\\n  user {\\n    username\\n    nickname\\n  }\\n  posts(author: \\"me\\") {\\n    title\\n    content\\n  }\\n}"}',
+  );
+
+  type QueryResult = Output<typeof query__v2>;
+  // QueryResult is inferred as:
   // {
   //   user: {
   //     username: string;
@@ -45,33 +52,10 @@ test('', () => {
   //   }[];
   // }
 
-  const compiled__v1 = compileGraphQL('query')(query__v1);
-  expect(compiled__v1).toEqual(
-    `query {
-  user {
-    username
-    nickname
-  }
-  posts(author: "me") {
-    title
-    content
-  }
-}`,
-  );
-
-  type MyResult = Resolved<typeof compiled__v1>;
-
-  const compiled__v2 = compileGraphQL('query')({
-    user: userFragment,
-    posts: [{ author: 'me' }, postFragment],
-  });
-
-  const makeGraphQLRequest = async <TResult>(
-    compiled: GraphQLString<TResult>,
-  ): Promise<TResult> => {
+  const fetchGraphQL = async <T>(query: T) => {
     const response = await fetch('http://example.com/graphql', {
       method: 'POST',
-      body: JSON.stringify({ query: compiled }),
+      body: JSON.stringify({ query }),
       headers: {
         'content-type': 'application/json',
         // If your endpoint requires authorization, comment out the code below.
@@ -79,14 +63,83 @@ test('', () => {
       },
     });
     const responseData = (await response.json()).data;
-    return responseData;
+    return responseData as Output<T>;
   };
+
+  // Can be used like:
+  fetchGraphQL(query__v2).then((data) => {
+    const titles = data.posts.map((post) => post.title);
+    // ...
+  });
+
+  // Field selections
+  const query__v7 = graphql('Query')({
+    user: {
+      username: true,
+      nickname: true,
+    },
+  });
+
+  // Field selections with inputs
+  const query__v8 = graphql('Query')({
+    user: {
+      username: true,
+      nickname: true,
+      avatar: [{ size: 128 }, true],
+    },
+    posts: [
+      { author: 'me' },
+      {
+        title: true,
+        content: true,
+      },
+    ],
+  });
+
+  // Field selections with aliases
+
+  const query__v9 = graphql('Query')({
+    user: {
+      username: true,
+      nickname: true,
+      'avatar as avatarSmall': [{ size: 128 }, true],
+      'avatar as avatarLarge': [{ size: 512 }, true],
+    },
+  });
+
+  type QueryOutput = Output<typeof query__v9>;
+
+  // Fragments
+
+  const postHeaderFragment = graphql('Post')({
+    title: true,
+    author: {
+      id: true,
+      username: true,
+      avatar: [{ width: 128, height: 128 }, true],
+    },
+  });
+
+  const postFragment__v1 = graphql('Post')({
+    id: true,
+    '...': postHeaderFragment,
+  });
+
+  type PostFragmentOutput__v1 = Output<typeof postFragment__v1>;
+
+  const postContentFragment = graphql('Post')({
+    content: true,
+  });
 
   const postFragment__v2 = graphql('Post')({
     id: true,
-    'content as longContent': [{ maxLength: 4000 }, true],
-    'content as shortContent': [{ maxLength: 40 }, true],
+    '... as a': postHeaderFragment,
+    '... as b': postContentFragment,
   });
+
+  type PostFragmentOutput__v2 = Output<typeof postFragment__v2>;
+
+  // Unions and interfaces
 
   const feedFragment = graphql('FeedItem')({
     __typename: true,
@@ -102,82 +155,77 @@ test('', () => {
     },
   });
 
-  const processFeedItem = (feedItem: Resolved<typeof feedFragment>) => {
-    if (feedItem.__typename === 'Comment') {
-      // The type of feedItem is Comment in this block.
-    } else if (feedItem.__typename === 'Post') {
-      // The type of feedItem is Post in this block.
-    }
+  type FeedFragmentOutput = Output<typeof feedFragment>;
+
+  // eslint-disable-next-line prefer-const
+  let feedItem: FeedFragmentOutput = {} as any;
+
+  if (feedItem.__typename === 'Comment') {
+    // TypeScript figures out feedItem is a Comment in this block, and ...
+  } else if (feedItem.__typename === 'Post') {
+    // feedItem is a Post in this block.
+  }
+
+  // Variables in queries
+
+  const query__v4 = graphql('Query', { postsAuthor: 'String!' })(($) => ({
+    posts: [
+      { author: $.postsAuthor },
+      {
+        title: true,
+        content: true,
+      },
+    ],
+  }));
+
+  type QueryInput = Input<typeof query__v4>;
+
+  const fetchGraphQL__v2 = async <T>(query: T, variables: Input<T>) => {
+    const response = await fetch('http://example.com/graphql', {
+      method: 'POST',
+      body: JSON.stringify({ query, variables }),
+      headers: {
+        'content-type': 'application/json',
+        // If your endpoint requires authorization, comment out the code below.
+        // authorization: '...'
+      },
+    });
+    const responseData = (await response.json()).data;
+    return responseData as Output<T>;
   };
 
-  const postDetailFragment = graphql('Post')({
-    id: true,
-    content: true,
-    author: {
-      id: true,
-      username: true,
-      avatar: [{ width: 128, height: 128 }, true],
-    },
+  // Can be used like:
+  fetchGraphQL__v2(query__v4, { postsAuthor: 'alice' }).then((data) => {
+    // ...
   });
-  const postSummaryFragment = graphql('Post')({
-    id: true,
-    'content as shortContent': [{ maxLength: 40 }, true],
-    author: {
-      nickname: true,
-      'avatar as smallAvatar': [{ width: 32, height: 32 }, true],
-    },
-  });
-  const query__v3 = graphql('Query')({
-    posts: {
-      '...': postDetailFragment,
-      author: { nickname: true },
-    },
-  });
-  const query__v4 = graphql('Query')({
-    posts: {
-      '... as a': postDetailFragment,
-      '... as b': postSummaryFragment,
-    },
-  });
-  const compiled__v3 = compileGraphQL('query')(query__v4);
-  expect(compiled__v3).toEqual(
-    `query {
-  posts {
-    id
-    content
-    author {
-      nickname
-      smallAvatar: avatar(width: 32, height: 32)
-      id
-      username
-      avatar(width: 128, height: 128)
-    }
-    shortContent: content(maxLength: 40)
-  }
-}`,
-  );
-  const userFragment__v2 = graphql('User', { avatarSize: 'Int!' })(($) => ({
-    avatar: [{ width: $.avatarSize, height: $.avatarSize }, true],
+
+  // Variables in fragments
+
+  const userFragment__v3 = graphql('User', { avatarSize: 'Int!' })(($) => ({
+    avatar: [{ size: $.avatarSize }, true],
   }));
-  const postFragment__v3 = graphql('Post', { avatarSize: 'Int!' })(($) => ({
-    id: true,
-    author: {
-      id: true,
-      '...': userFragment__v2({ avatarSize: $.avatarSize }),
-    },
+
+  const query__v5 = graphql('Query', { postsAuthor: 'String!' })(($) => ({
+    posts: [
+      { author: $.postsAuthor },
+      {
+        title: true,
+        content: true,
+        author: userFragment__v3({ avatarSize: 128 }),
+      },
+    ],
   }));
-  const compiled__v4 = compileGraphQL('query', { avatarSize: 'Int!' })(($) => ({
-    posts: postFragment__v3({ avatarSize: $.avatarSize }),
-  }));
-  expect(compiled__v4).toEqual(
-    `query($avatarSize: Int!) {
-  posts {
-    id
-    author {
-      id
-      avatar(width: $avatarSize, height: $avatarSize)
-    }
-  }
-}`,
+
+  const query__v6 = graphql('Query', { postsAuthor: 'String!', postsAuthorAvatarSize: 'Int!' })(
+    ($) => ({
+      posts: [
+        { author: $.postsAuthor },
+        {
+          title: true,
+          content: true,
+          author: userFragment__v3({ avatarSize: $.postsAuthorAvatarSize }),
+        },
+      ],
+    }),
   );
 });

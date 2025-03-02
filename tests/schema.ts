@@ -5,8 +5,6 @@ import {
   Nullable,
   Predicate,
   makeGraphql,
-  makeCompileGraphQL,
-  makeDefineVariables,
 } from '../src';
 
 type Int = Predicate<number>;
@@ -19,7 +17,7 @@ type DateTime = Predicate<Date>;
 export type Schema = {
   query: Query;
   mutation: Mutation;
-}
+};
 
 export type Query = {
   __typename: {
@@ -44,7 +42,7 @@ export type Query = {
     arguments: {};
     type: Query;
   };
-}
+};
 
 export type User = {
   __typename: {
@@ -67,6 +65,7 @@ export type User = {
     arguments: {
       width: { type: Nullable<Int> };
       height: { type: Nullable<Int> };
+      size: { type: Nullable<Int> };
     };
     type: Nullable<String>;
   };
@@ -74,7 +73,7 @@ export type User = {
     arguments: {};
     type: User;
   };
-}
+};
 
 export type FeedItem = {
   __typename: {
@@ -101,13 +100,13 @@ export type FeedItem = {
     arguments: {};
     type: Comment;
   };
-}
+};
 
 export type PostStatus = Predicate<
   | "DRAFT"
   | "PUBLIC"
   | "ARCHIVED"
->
+>;
 
 export type Post = {
   __typename: {
@@ -140,7 +139,7 @@ export type Post = {
     arguments: {};
     type: Post;
   };
-}
+};
 
 export type Comment = {
   __typename: {
@@ -169,12 +168,12 @@ export type Comment = {
     arguments: {};
     type: Comment;
   };
-}
+};
 
 export type LoginInput = {
   username: { type: String };
   password: { type: String };
-}
+};
 
 export type LoginPayload = {
   __typename: {
@@ -193,7 +192,7 @@ export type LoginPayload = {
     arguments: {};
     type: LoginError;
   };
-}
+};
 
 export type LoginSuccess = {
   __typename: {
@@ -212,7 +211,7 @@ export type LoginSuccess = {
     arguments: {};
     type: LoginSuccess;
   };
-}
+};
 
 export type LoginError = {
   __typename: {
@@ -227,7 +226,7 @@ export type LoginError = {
     arguments: {};
     type: LoginError;
   };
-}
+};
 
 export type Mutation = {
   __typename: {
@@ -250,13 +249,13 @@ export type Mutation = {
     arguments: {};
     type: Mutation;
   };
-}
+};
 
 export type MutatePostInput = {
   id: { type: Nullable<Int> };
   title: { type: String };
   content: { type: String };
-}
+};
 
 export type StrayInterface = {
   __typename: {
@@ -271,7 +270,7 @@ export type StrayInterface = {
     arguments: {};
     type: StrayInterface;
   };
-}
+};
 
 export type __Schema = {
   __typename: {
@@ -306,7 +305,7 @@ export type __Schema = {
     arguments: {};
     type: __Schema;
   };
-}
+};
 
 export type __Type = {
   __typename: {
@@ -363,7 +362,7 @@ export type __Type = {
     arguments: {};
     type: __Type;
   };
-}
+};
 
 export type __TypeKind = Predicate<
   | "SCALAR"
@@ -374,7 +373,7 @@ export type __TypeKind = Predicate<
   | "INPUT_OBJECT"
   | "LIST"
   | "NON_NULL"
->
+>;
 
 export type __Field = {
   __typename: {
@@ -411,7 +410,7 @@ export type __Field = {
     arguments: {};
     type: __Field;
   };
-}
+};
 
 export type __InputValue = {
   __typename: {
@@ -446,7 +445,7 @@ export type __InputValue = {
     arguments: {};
     type: __InputValue;
   };
-}
+};
 
 export type __EnumValue = {
   __typename: {
@@ -473,7 +472,7 @@ export type __EnumValue = {
     arguments: {};
     type: __EnumValue;
   };
-}
+};
 
 export type __Directive = {
   __typename: {
@@ -506,7 +505,7 @@ export type __Directive = {
     arguments: {};
     type: __Directive;
   };
-}
+};
 
 export type __DirectiveLocation = Predicate<
   | "QUERY"
@@ -528,7 +527,7 @@ export type __DirectiveLocation = Predicate<
   | "ENUM_VALUE"
   | "INPUT_OBJECT"
   | "INPUT_FIELD_DEFINITION"
->
+>;
 
 export type OutputCompositeTypeMap = {
   Query: Query;
@@ -561,6 +560,3 @@ export type InputTypeMap = {
 };
 
 export const graphql = makeGraphql<OutputCompositeTypeMap, InputTypeMap>();
-export const compileGraphQL = makeCompileGraphQL<InputTypeMap, Schema>();
-export type { Resolved, Selection, GraphQLString } from '../src';
-export const defineVariables = makeDefineVariables<InputTypeMap>();

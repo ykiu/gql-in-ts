@@ -37,11 +37,7 @@ export type List<T extends InputType> = {
 
 type OutputType = OutputObjectType | Predicate | Wrapper<any>;
 
-type Schema = {
-  [key: string]: OutputObjectType;
-};
-
-export type OutputObjectType = {
+type OutputObjectType = {
   [key: string]: OutputObjectTypeEntry;
 };
 
@@ -83,63 +79,47 @@ type InputObjectTypeValue<TInputObjectType extends InputObjectType> = {
 
 export type LiteralOrVariable<T extends InputTypeValue<InputType>> =
   | T
-  | (T extends InputTypeValue<infer TSchemaType> ? VariableReference<TSchemaType> : never);
+  | (T extends InputTypeValue<infer TSchemaType> ? VariableObject<TSchemaType> : never);
 
-type VariableReference<TType extends InputType, TDefinition = VariableReferenceDefinition> = {
+const __isVariableObject: unique symbol = Symbol();
+
+/** A runtime object for representing a GraphQL variable. */
+type VariableObject<TType extends InputType> = {
+  /** A TypeScript-friendly representation of the type */
   __type?: TType;
-  __definition: TDefinition;
+  [__isVariableObject]: true;
 };
 
-type VariableReferenceDefinition<TInputTypeMap extends InputTypeMap = InputTypeMap> =
-  | NonNullableReference<TInputTypeMap, any>
-  | ListReference<TInputTypeMap, any>
+/** User-supplied template literal type like [Int!] */
+type VariableTemplateLiteral<TInputTypeMap extends InputTypeMap = InputTypeMap> =
+  | NonNullableTemplateLiteral<TInputTypeMap, any>
+  | ListTemplateLiteral<TInputTypeMap, any>
   | (keyof TInputTypeMap & string);
 
-type NonNullableReference<
+type NonNullableTemplateLiteral<
   TInputTypeMap extends InputTypeMap,
-  TDefinition extends VariableReferenceDefinition<TInputTypeMap>,
+  TDefinition extends VariableTemplateLiteral<TInputTypeMap>,
 > = `${TDefinition}!`;
 
-type ListReference<
+type ListTemplateLiteral<
   TInputTypeMap extends InputTypeMap,
-  TDefinition extends VariableReferenceDefinition<TInputTypeMap>,
+  TDefinition extends VariableTemplateLiteral<TInputTypeMap>,
 > = `[${TDefinition}]`;
 
 type UnwrapNullable<T extends InputType> = T extends Nullable<infer U> ? U : T;
 
-type VariableReferenceType<
+/** Transforms a user-supplied template literal type like [Int!] into a
+ * TypeScript-friendly shape. */
+type ResolveVariableTemplateLiteral<
   TInputTypeMap extends InputTypeMap,
-  TDefinition extends VariableReferenceDefinition<TInputTypeMap>,
+  TDefinition extends VariableTemplateLiteral<TInputTypeMap>,
 > = TDefinition extends keyof TInputTypeMap
   ? Nullable<TInputTypeMap[TDefinition]>
-  : TDefinition extends ListReference<TInputTypeMap, infer T>
-  ? Nullable<List<VariableReferenceType<TInputTypeMap, T>>>
-  : TDefinition extends NonNullableReference<TInputTypeMap, infer T>
-  ? UnwrapNullable<VariableReferenceType<TInputTypeMap, T>>
+  : TDefinition extends ListTemplateLiteral<TInputTypeMap, infer T>
+  ? Nullable<List<ResolveVariableTemplateLiteral<TInputTypeMap, T>>>
+  : TDefinition extends NonNullableTemplateLiteral<TInputTypeMap, infer T>
+  ? UnwrapNullable<ResolveVariableTemplateLiteral<TInputTypeMap, T>>
   : never;
-
-export type VariableReferences<
-  TInputTypeMap extends InputTypeMap,
-  TVariableDefinitions extends VariableDefinitions<TInputTypeMap>,
-> = {
-  [TKey in keyof TVariableDefinitions]: VariableReference<
-    VariableReferenceType<TInputTypeMap, TVariableDefinitions[TKey]>
-  >;
-};
-
-type VariableDefinitions<TInputTypeMap extends InputTypeMap> = Record<
-  string,
-  VariableReferenceDefinition<TInputTypeMap>
->;
-
-export type VariableReferenceValues<
-  TInputTypeMap extends InputTypeMap,
-  TVariableDefinitions extends VariableDefinitions<TInputTypeMap>,
-> = InputObjectTypeValue<{
-  [TKey in keyof TVariableDefinitions]: {
-    type: VariableReferenceType<TInputTypeMap, TVariableDefinitions[TKey]>;
-  };
-}>;
 
 // -------------------------------------------
 // Types for making selections (a.k.a queries)
@@ -189,19 +169,21 @@ type SelectionType<TOutputType extends OutputType> = TOutputType extends OutputO
 /**
  * Embeds the resolved type for a query/mutation/subscription.
  */
-export type HasResolved<TVariableDefinitions, TResolved> = {
+export type HasResolved<TVariableTemplateLiterals, TResolved> = {
   // Ensure HasResolved is a valid Selection.
-  __resolved?: { 0: { _: (variables: TVariableDefinitions) => TResolved }; 1: {} };
+  __resolved?: { 0: { _: (variables: TVariableTemplateLiterals) => TResolved }; 1: {} };
 };
 
 /**
  * Extracts the resolved type for a query/mutation/subscription.
  */
-export type Resolved<T extends HasResolved<never, unknown>> = T extends HasResolved<
-  never,
-  infer TResult
->
-  ? TResult
+export type Output<T> = T extends HasResolved<never, infer TResult> ? TResult : never;
+
+/**
+ * Extracts inputs that a query/mutation/subscription takes.
+ */
+export type Input<T> = T extends HasResolved<infer TVariableTemplateLiterals, unknown>
+  ? TVariableTemplateLiterals
   : never;
 
 /**
@@ -297,7 +279,7 @@ type ResolveSelection<
               // | { __typename: 'A' | 'B'; } // ----------------------------- Union candidate 1
               // | { __typename: 'A'; fieldSpecificToA: <some value>; } // --- Union candidate 2
               //
-              // The above type is hardly useful because one cannot discriminate
+              // The above union is useless because one cannot discriminate
               // union candidates based on the value of __typename.
               // To be able to use __typename as a tag for telling apart the union
               // constituents, __typename of union candidate 1 have to be narrowed
@@ -433,13 +415,6 @@ type ResolveSelectionType<
   ? ResolveSelectionType<TWrapped, TSelectionType> | null // Nullable of another type
   : never;
 
-// -----------------------------------------------------------------
-// Types for expressing compiled queries, mutations or subscriptions
-// -----------------------------------------------------------------
-
-export type GraphQLString<TResolved, TVariableValues = never> = string &
-  HasResolved<TVariableValues, TResolved>;
-
 // -----------------------------------------------------------
 // Functions for compiling queries, mutations or subscriptions
 // -----------------------------------------------------------
@@ -483,12 +458,12 @@ const compileKey = (key: string) => {
   return `${alias}: ${originalName}`;
 };
 
-const isVariableObject = (value: unknown): value is VariableReference<InputType> =>
-  typeof value === 'object' && value != null && '__definition' in value;
+const isVariableObject = (value: unknown): value is VariableObject<InputType> =>
+  typeof value === 'object' && value != null && __isVariableObject in value;
 
 const compileArgument = (
   arg: unknown,
-  nameByVariable: Map<VariableReference<any>, string>,
+  nameByVariable: Map<VariableObject<any>, string>,
 ): string => {
   if (typeof arg === 'number' || typeof arg === 'string' || typeof arg === 'boolean')
     return JSON.stringify(arg);
@@ -521,7 +496,7 @@ const deepEqual = (value1: unknown, value2: unknown): boolean => {
   return value1 === value2;
 };
 
-export const mergeSelections = <
+const mergeSelections = <
   TSelection1 extends Selection<OutputObjectType>,
   TSelection2 extends Selection<OutputObjectType>,
 >(
@@ -580,7 +555,7 @@ const resolveSpreads = (selection: any): any => {
 const compileSelectionEntry = <TOutputObjectTypeEntry extends OutputObjectTypeEntry>(
   key: string,
   selectionEntry: SelectionEntry<TOutputObjectTypeEntry>,
-  nameByVariable: Map<VariableReference<any>, string>,
+  nameByVariable: Map<VariableObject<any>, string>,
   indentSize = 0,
 ): string => {
   const indent = ' '.repeat(indentSize);
@@ -606,92 +581,17 @@ const compileSelectionEntry = <TOutputObjectTypeEntry extends OutputObjectTypeEn
   ].join('\n');
 };
 
-const constructVariableReference = <
-  TInputTypeMap extends InputTypeMap,
-  TDefinition extends VariableReferenceDefinition<TInputTypeMap>,
->(
-  definition: TDefinition,
-): VariableReference<VariableReferenceType<TInputTypeMap, TDefinition>> => ({
-  __definition: definition,
-});
+const constructVariableObject = () => ({ [__isVariableObject]: true } as const);
 
-const constructVariableReferences = <
-  TInputTypeMap extends InputTypeMap,
-  TVariableDefinitions extends VariableDefinitions<TInputTypeMap>,
->(
-  variables: TVariableDefinitions,
-) => {
-  const variableEntries = objectEntries(variables);
-  const wrappedVariableEntries = variableEntries.map(
-    ([k, v]) => [k, constructVariableReference<TInputTypeMap, typeof v>(v)] as const,
+const constructVariableObjects = (variables: {}) => {
+  const variableEntries = Object.keys(variables).map(
+    (k) => [k, constructVariableObject()] as const,
   );
-  const nameByVariable = new Map(wrappedVariableEntries.map(([k, v]) => [v, k]));
-
+  const nameByVariable = new Map(variableEntries.map(([k, v]) => [v, k]));
   return {
-    variableObjects: objectFromEntries(wrappedVariableEntries) as VariableReferences<
-      TInputTypeMap,
-      TVariableDefinitions
-    >,
+    variableObjects: objectFromEntries(variableEntries),
     variableNameByVariableObject: nameByVariable,
   };
-};
-
-export const makeCompileGraphQL = <
-  TInputTypeMap extends InputTypeMap,
-  TSchema extends Schema,
->() => {
-  // Overload 1: selection without variables
-  function fn<TType extends keyof TSchema & string>(
-    type: TType,
-  ): <TSelection extends Selection<TSchema[TType]>>(
-    selection: TSelection,
-  ) => GraphQLString<Resolve<TSchema[TType], TSelection>>;
-
-  // Overload 2: selection with variables
-  function fn<
-    TType extends keyof TSchema & string,
-    TVariables extends VariableDefinitions<TInputTypeMap>,
-  >(
-    type: TType,
-    variables: TVariables,
-  ): <TSelection extends Selection<TSchema[TType]>>(
-    getSelection: ($: VariableReferences<TInputTypeMap, TVariables>) => TSelection,
-  ) => GraphQLString<
-    Resolve<TSchema[TType], TSelection>,
-    VariableReferenceValues<TInputTypeMap, TVariables>
-  >;
-
-  function fn<
-    TType extends keyof TSchema & string,
-    TVariables extends VariableDefinitions<TInputTypeMap>,
-  >(type: TType, variables?: TVariables) {
-    return <TSelection extends Selection<TSchema[TType]>>(
-      selection:
-        | TSelection
-        | ((v: VariableReferences<TInputTypeMap, NonNullable<TVariables>>) => TSelection),
-    ): GraphQLString<
-      Resolve<TSchema[TType], TSelection>,
-      VariableReferenceValues<TInputTypeMap, TVariables>
-    > => {
-      const cleanedVariables = (variables || {}) as NonNullable<TVariables>;
-      const { variableObjects, variableNameByVariableObject } = constructVariableReferences<
-        TInputTypeMap,
-        NonNullable<TVariables>
-      >(cleanedVariables);
-      const variableEntries = objectEntries(cleanedVariables);
-      const compiledVariableDefinitions = variableEntries.map(([k, v]) => `$${k}: ${v}`).join(', ');
-      const compiledVariablesWithParenth =
-        compiledVariableDefinitions.length > 0 ? `(${compiledVariableDefinitions})` : '';
-      const evaluatedSelection =
-        typeof selection === 'function' ? selection(variableObjects) : selection;
-      return compileSelectionEntry(
-        `${type}${compiledVariablesWithParenth}`,
-        [{}, evaluatedSelection],
-        variableNameByVariableObject,
-      );
-    };
-  }
-  return fn;
 };
 
 // ---------------------------------------------------------
@@ -707,42 +607,77 @@ export const makeGraphql = <
     type: TTypeName,
   ): <TSelection extends Selection<TObjectTypeMap[TTypeName]>>(
     selection: TSelection,
-  ) => TSelection & HasResolved<never, Resolve<TObjectTypeMap[TTypeName], TSelection>>;
+  ) => TSelection & HasResolved<undefined | null, Resolve<TObjectTypeMap[TTypeName], TSelection>>;
 
   // Overload 2: selection with variables
   function fn<
     TTypeName extends keyof TObjectTypeMap,
-    TVariables extends VariableDefinitions<TInputTypeMap>,
+    TVariables extends Record<string, VariableTemplateLiteral<TInputTypeMap>>,
   >(
     type: TTypeName,
     variables: TVariables,
   ): <
     TGetSelection extends (
-      v: VariableReferences<TInputTypeMap, TVariables>,
+      variables: InputObjectTypeValue<{
+        [TKey in keyof TVariables]: {
+          type: ResolveVariableTemplateLiteral<TInputTypeMap, TVariables[TKey]>;
+        };
+      }>,
     ) => Selection<TObjectTypeMap[TTypeName]>,
   >(
-    getSselection: TGetSelection,
+    selection: TGetSelection,
   ) => TGetSelection &
-    HasResolved<never, Resolve<TObjectTypeMap[TTypeName], ReturnType<TGetSelection>>>;
+    HasResolved<
+      InputObjectTypeValue<{
+        [TKey in keyof TVariables]: {
+          type: ResolveVariableTemplateLiteral<TInputTypeMap, TVariables[TKey]>;
+        };
+      }>,
+      Resolve<TObjectTypeMap[TTypeName], ReturnType<TGetSelection>>
+    >;
 
   // Actual implementation
   function fn<
     TType extends keyof TObjectTypeMap & string,
-    TVariables extends VariableDefinitions<TInputTypeMap>,
+    TVariables extends Record<string, VariableTemplateLiteral<TInputTypeMap>>,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   >(type: TType, variables?: TVariables) {
     return <
       TSelection extends
         | Selection<TObjectTypeMap[TType]>
-        | ((v: VariableReferences<TInputTypeMap, TVariables>) => Selection<TObjectTypeMap[TType]>),
+        | ((variables: any) => Selection<TObjectTypeMap[TType]>),
     >(
       selection: TSelection,
-    ) => selection;
+    ) => {
+      let cache: string;
+      const clone: any =
+        typeof selection === 'function' ? (v: any) => selection(v) : { ...selection };
+      Object.defineProperty(clone, 'toJSON', {
+        // Ensure `toJSON` is not picked up by Object.keys(), etc.
+        enumerable: false,
+        value: () => {
+          if (cache) return cache;
+          const cleanedVariables = (variables || {}) as NonNullable<TVariables>;
+          const { variableObjects, variableNameByVariableObject } =
+            constructVariableObjects(cleanedVariables);
+          const variableEntries = objectEntries(cleanedVariables);
+          const compiledVariableDefinitions = variableEntries
+            .map(([k, v]) => `$${k}: ${v}`)
+            .join(', ');
+          const compiledVariablesWithParenth =
+            compiledVariableDefinitions.length > 0 ? `(${compiledVariableDefinitions})` : '';
+          const evaluatedSelection =
+            typeof selection === 'function' ? selection(variableObjects as {}) : selection;
+          // For now, the behaviour of toJSON() for types other than Query, Mutation, Subscription is undefined.
+          return (cache = compileSelectionEntry(
+            `${type.toLowerCase()}${compiledVariablesWithParenth}`,
+            [{}, evaluatedSelection as any],
+            variableNameByVariableObject,
+          ));
+        },
+      });
+      return clone;
+    };
   }
   return fn;
 };
-
-export const makeDefineVariables =
-  <TInputTypeMap extends InputTypeMap>() =>
-  <TVariables extends VariableDefinitions<TInputTypeMap>>(variables: TVariables) =>
-    variables;

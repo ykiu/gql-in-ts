@@ -13,7 +13,7 @@
     "downlevelIteration": false,
   },
   "include": [
-    "src"
+    "src",
   ],
   "exclude": []
 }

@@ -1,42 +1,61 @@
-<a href="https://github.com/ykiu/gql-in-ts"><img src="./logo-dist.svg" style="width: 320px; max-width: 100%; aspect-ratio: 364.3 / 160" alt="gql-in-ts logo" /></a>
-
 # gql-in-ts
 
 [![npm](https://img.shields.io/npm/v/gql-in-ts)](https://www.npmjs.com/package/gql-in-ts/) ![](https://github.com/ykiu/gql-in-ts/actions/workflows/ci.yaml/badge.svg)
 
-A type-safe way to write GraphQL. Express your queries as plain objects and rely on the TypeScript compiler to keep your type definitions in sync with the queries.
+A lightweight and type-safe GraphQL query builder.
 
-<img src="https://user-images.githubusercontent.com/32252655/253862101-906a209f-5bfa-4e72-af25-fa0967ffc79c.gif" style="aspect-ratio: 850 / 359" alt="A screen recording demonstrating the usage of gql-in-ts." />
+https://github.com/user-attachments/assets/696a82e4-dfa6-4843-ac6b-8126125e61ae
 
 ## Features
 
-**Straightforward** — Tired of maintaining a complex development environment with loads of plugins/extensions? `gql-in-ts` is a tiny library that comes with carefully designed TypeScript type definitions. It requires no changes to your existing build process, yet it guarantees the correctness of your GraphQL queries with the help of the TypeScript compiler.
+**Straightforward** — `gql-in-ts` allows you to inline GraphQL queries directly in TypeScript without requiring a special build process. It ensures query correctness using TypeScript’s type system.
 
-**Ergonomic** — Unlike most existing GraphQL client solutions that generate TypeScript code from GraphQL queries, `gql-in-ts` relies on TypeScript type inference to keep queries and types in sync, eliminating the need for code generation.
+**Ergonomic** — Unlike most GraphQL clients, gql-in-ts uses the TypeScript compiler to infer types directly from GraphQL queries, removing the need for code generation.
 
 **Portable** — Being agnostic of the runtime or view framework, `gql-in-ts` will Just Work™ in any ES5+ environment.
 
-## Getting started
+## Supported TypeScript versions
 
-Currently, `gql-in-ts` is tested against TypeScript versions 4.4 through 5.1.
+Supports TypeScript versions 4.4 to 5.1.
 
-Install the library:
+## Installing
 
 ```bash
 npm i gql-in-ts
 ```
 
-Generate TypeScript code from your schema:
+## Usage
+
+### CLI
+
+First, generate a TypeScript module from your GraphQL schema by running the `gql-in-ts` command. In the example below, `schema.graphql` is translated into `schema.ts`:
 
 ```bash
 npx gql-in-ts schema.graphql schema.ts
 ```
 
-## Core concepts
+### APIs
 
-### The `graphql` function
+The generated module exports a function named `graphql`, which you'll use to define inline GraphQL queries:
 
-The generated module exports a function named `graphql`. Use it to write GraphQL operations:
+```ts
+import {
+  graphql // A wrapper function for defining inline GraphQL queries.
+} from './schema.ts'; // The generated module
+```
+
+Additionally, the module `gql-in-ts` exports helper types for deriving TypeScript types from GraphQL queries:
+
+```ts
+import {
+  Output, // A helper type for getting the TypeScript type from a GraphQL operation.
+  Input, // A helper type for getting the types of the variables (or parameters) that a GraphQL operation takes.
+} from 'gql-in-ts';
+```
+
+#### The `graphql` function
+
+The `graphql` function can be used to define a GraphQL operation:
 
 ```ts
 import { graphql } from './schema';
@@ -56,9 +75,9 @@ const query = graphql('Query')({
 });
 ```
 
-The `graphql` function returns the query object as is, without modifying it. However, its type signatures enforce type checking, allowing TypeScript-compatible editors to provide instant feedback and auto-completion.
+The `graphql` function provides auto-completion for field names and arguments.
 
-A large query can be split into smaller pieces, similar to breaking down a function or a class into smaller functions or classes:
+To divide a GraphQL operation into fragments, simply extract the parts of your interest and wrap the individual parts with the `graphql` function:
 
 ```ts
 import { graphql } from './schema';
@@ -77,123 +96,294 @@ const query = graphql('Query')({
 });
 ```
 
-### The `Resolved` utility type
-
-The `Resolved` utility type can be used to define the response type of a query:
+The value returned from the `graphql` function is compiled into real GraphQL when `JSON.stringify`ed:
 
 ```ts
-import { Resolved } from './schema';
-
-type QueryResult = Resolved<typeof query>;
-// QueryResult would be inferred as:
-// {
-//   user: {
-//     username: string;
-//     nickname: string;
-//   };
-//   posts: {
-//     title: string;
-//     content: string;
-//   }[];
-// }
+JSON.stringify({ query });
+// '{"query":"query {\\n  user {\\n    username\\n    nickname\\n  }\\n  posts(author: \\"me\\") {\\n    title\\n    content\\n  }\\n}"}'
 ```
 
-### The `compileGraphQL` function
+#### The `Output` type
 
-As mentioned earlier, the `graphql` function returns the given query unmodified. Because the query is a plain JavaScript object at this point, it needs to be converted to a GraphQL string before being sent to the server. This can be achieved by using `compileGraphQL`:
+The `Output` type can be used to define the response data type of a query:
 
 ```ts
-import { compileGraphQL } from './schema';
+import { Output } from 'gql-in-ts';
 
-const compiled = compileGraphQL('query')(query);
-expect(compiled).toEqual(
-  `query {
-  user {
-    username
-    nickname
-  }
-  posts(author: "me") {
-    title
-    content
-  }
-}`,
-);
+type QueryResult = Output<typeof query>;
 ```
 
-`compileGraphQL` is like `JSON.stringify()` for GraphQL. However, the return type of `compileGraphQL` is a string subtype named `GraphQLString`. `GraphQLString` is an ordinary string at runtime, but at the TypeScript level, it contains metadata for type inference. The `Resolved` utility can be used again to obtain the the type of the response:
+`QueryResult` is inferred as:
 
 ```ts
-type MyResult = Resolved<typeof compiled>;
+type QueryResult = {
+  user: {
+    username: string;
+    nickname: string | null;
+  };
+  posts: {
+    title: string;
+    content: string;
+  }[];
+};
 ```
 
-Alternatively, the resolved type can be extracted from the first type parameter of GraphQLString:
+#### The `Input` type
+
+The `Input` type can be used to define input variable types of a query. I'll dwell on this later in the [Variables in queries](#variables-in-queries) section.
+
+### Making a network request
+
+`gql-in-ts` is network-agnostic. You can define a custom function to fetch a GraphQL endpoint and properly type the response, like this:
 
 ```ts
-import { GraphQLString } from './schema';
+import { Output } from 'gql-in-ts';
 
-type MyResult = typeof compiled extends GraphQLString<infer TResolved> ? TResolved : never;
-```
-
-You can also pass your query directly to `compileGraphQL` instead of via `graphql`.
-
-```ts
-import { compileGraphQL } from './schema';
-
-const compiled = compileGraphQL('query')({
-  user: userFragment,
-  posts: [{ author: 'me' }, postFragment],
-});
-```
-
-### Making a request
-
-`gql-in-ts` is agnostic of the transport layer, so it is your responsibility to send requests to your backend server. However, since most GraphQL endpoints are [served over HTTP](https://graphql.org/learn/serving-over-http/), here is an example demonstrating how to send a typed GraphQL query using `fetch`:
-
-```ts
-import { GraphQLString } from './schema';
-
-const makeGraphQLRequest = async <TResolved>(
-  compiled: GraphQLString<TResolved>,
-): Promise<TResolved> => {
+const fetchGraphQL = async <T>(query: T) => {
   const response = await fetch('http://example.com/graphql', {
     method: 'POST',
-    body: JSON.stringify({ query: compiled }),
+    body: JSON.stringify({ query }),
+    // query gets compiled into real GraphQL when JSON.stringify()ed.
     headers: {
       'content-type': 'application/json',
-      // If your endpoint requires authorization, comment out the code below.
+      // If your endpoint requires authorization, uncomment the code below.
       // authorization: '...'
     },
   });
   const responseData = (await response.json()).data;
-  return responseData;
+  return responseData as Output<T>;
 };
-```
 
-## Advanced
-
-### Using aliases
-
-Fields can be aliased by appending ` as [alias]` to their names:
-
-```ts
-import { graphql } from './schema';
-
-const postFragment = graphql('Post')({
-  id: true,
-  'content as longContent': [{ maxLength: 4000 }, true],
-  'content as shortContent': [{ maxLength: 40 }, true],
+// Can be used like the following:
+fetchGraphQL(query).then((data) => {
+  const titles = data.posts.map((post) => post.title);
+  // ...
 });
 ```
 
-The fields on the resulting response can be accessed by their respective aliases.
+_See also: [GraphQL: serving over HTTP](https://graphql.org/learn/serving-over-http/)._
 
-### Unions and interfaces
+### Syntax
 
-Fields on unions and interfaces can be queried by using keys with the pattern `... on [type name]`. Say `FeedItem` is an interface for things that appear in feeds, and `Post` and `Comment` implement `FeedItem`. `id` and `author` are defined in `FeedItem`, and additional fields are defined in the respective implementations:
+This section describes the syntax of inline GraphQL queries that the `graphql` function accepts. The following schema is used for the purpose of explanation.
+
+```graphql
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  user: User!
+  posts(author: String): [Post!]!
+  feed: [FeedItem!]!
+}
+
+type User {
+  id: Int!
+  username: String!
+  nickname: String
+  avatar(size: Int): String
+}
+
+interface FeedItem {
+  id: Int!
+  author: User!
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLIC
+  ARCHIVED
+}
+
+type Post implements FeedItem {
+  id: Int!
+  author: User!
+  title: String!
+  content(maxLength: Int): String!
+  status: PostStatus!
+}
+```
+
+#### Field selections
+
+To select a primitive field, use `fieldname: true`.
+
+To select a non-primitive field, use `fieldname: {...subselection}`.
+
+In the example below,
 
 ```ts
 import { graphql } from './schema';
+const query = graphql('Query')({
+  user: {
+    username: true,
+    nickname: true,
+  },
+});
+```
 
+The fields `username` and `nickname` are primitive fields on the `User` type, so they are selected as `fieldname: true`. The field `user` is a non-primitive field on the `Query` type, so it is selected as `fieldname: {...subselection}`.
+
+#### Field selections with inputs
+
+If a primitive field requires inputs, use `fieldname: [{inputname1: inputvalue1, inputname2: inputvalue2, ...}, true]`.
+
+If a non-primitive field requires inputs, use `fieldname: [{inputname1: inputvalue1, inputname2: inputvalue2, ...}, { ...subselection }]`.
+
+In the example below,
+
+```ts
+import { graphql } from './schema';
+const query = graphql('Query')({
+  user: {
+    username: true,
+    nickname: true,
+    avatar: [{ size: 128 }, true],
+  },
+  posts: [
+    { author: 'me' },
+    {
+      title: true,
+      content: true,
+    },
+  ],
+});
+```
+
+The `avatar` field on the `User` type is getting `{ size: 128 }` as an input. The `posts` field on the `Query` type is getting `{ author: 'me' }` as an input.
+
+#### Field selections with aliases
+
+If an object key is suffixed with ` as [alias]`, the field is aliased as `[alias]`. In the example below,
+
+```ts
+import { graphql } from './schema';
+import { Output } from 'gql-in-ts';
+const query = graphql('Query')({
+  user: {
+    username: true,
+    nickname: true,
+    'avatar as avatarSmall': [{ size: 128 }, true],
+    'avatar as avatarLarge': [{ size: 512 }, true],
+  },
+});
+
+type QueryOutput = Output<typeof query>;
+```
+
+`QueryOutput` is evaluated as follows:
+
+```ts
+type QueryOutput = {
+  user: {
+    username: string;
+    nickname: string | null;
+    avatarSmall: string | null;
+    avatarLarge: string | null;
+  };
+};
+```
+
+#### Fragments
+
+Use `...` to merge a GraphQL fragment. In the example below,
+
+```ts
+import { Output } from 'gql-in-ts';
+import { graphql } from './schema';
+const postHeaderFragment = graphql('Post')({
+  title: true,
+  author: {
+    id: true,
+    username: true,
+    avatar: [{ size: 128 }, true],
+  },
+});
+
+const postFragment = graphql('Post')({
+  id: true,
+  '...': postHeaderFragment,
+});
+
+type PostFragmentOutput = Output<typeof postFragment>;
+```
+
+`PostFragmentOutput` is evaluated as follows:
+
+```ts
+type PostFragmentOutput = {
+  // id is selected in postFragment:
+  id: number;
+
+  // the rest of the fields are selected in postHeaderFragment:
+  title: string;
+  author: {
+    id: number;
+    username: string;
+    avatar: string | null;
+  };
+};
+```
+
+To merge multiple fragments, use `... as [arbitrary alias]` instead of `...`. In the example below,
+
+```ts
+import { Output } from 'gql-in-ts';
+import { graphql } from './schema';
+const postContentFragment = graphql('Post')({
+  content: true,
+});
+
+const postFragment = graphql('Post')({
+  id: true,
+  '... as a': postHeaderFragment,
+  '... as b': postContentFragment,
+});
+
+type PostFragmentOutput = Output<typeof postFragment>;
+```
+
+`PostFragmentOutput` is evaluated as follows:
+
+```ts
+type PostFragmentOutput = {
+  id: number;
+  title: string;
+  author: {
+    id: number;
+    username: string;
+    avatar: string | null;
+  };
+  content: string;
+};
+```
+
+_Caution: when multiple fragments with conflicting arguments are spread into the same location, a runtime error will be thrown. For example, the following is an error._
+
+```ts
+import { graphql } from './schema';
+const query = graphql('Query')({
+  '... as a': {
+    posts: { content: [{ maxLength: 100 }, true] },
+  },
+  '... as b': {
+    posts: { content: [{ maxLength: 200 }, true] },
+  },
+});
+
+JSON.stringify({ query });
+// Error: Cannot merge fragments. Saw conflicting arguments...
+```
+
+#### Unions and interfaces
+
+To select fields on a union or an interface, a key named `... on [name of the union or the interface]` should be used. In the example below,
+
+```ts
+import { Output } from 'gql-in-ts';
+import { graphql } from './schema';
 const feedFragment = graphql('FeedItem')({
   __typename: true,
   id: true,
@@ -207,176 +397,144 @@ const feedFragment = graphql('FeedItem')({
     content: true,
   },
 });
+
+type FeedFragmentOutput = Output<typeof feedFragment>;
 ```
 
-On the response, `__typename` can be used to narrow down the type:
+`FeedFragmentOutput` is evaluated as follows:
 
 ```ts
-import { Resolved } from './schema';
-
-const processFeedItem = (feedItem: Resolved<typeof feedFragment>) => {
-  if (feedItem.__typename === 'Comment') {
-    // The type of feedItem is inferred as Comment in this block.
-  } else if (feedItem.__typename === 'Post') {
-    // The type of feedItem is inferred as Post in this block.
-  }
-};
+type FeedFragmentOutput =
+  | {
+      title: string;
+      content: string;
+      __typename: 'Post';
+      id: number;
+      author: {
+        username: string;
+      };
+    }
+  | {
+      content: string;
+      post: {
+        title: string;
+      };
+      __typename: 'Comment';
+      id: number;
+      author: {
+        username: string;
+      };
+    };
 ```
 
-### Merging fragments
-
-Fragments can be merged to form a larger fragment or a query. This comes in handy when you have small UI components that comprise a complex UI, where each component depends on different subsets of data from the GraphQL API. In such cases, it makes sense to use GraphQL fragments not just for fetching data, but also for describing the shape of inputs to the components.
-
-Suppose you want to render a post. You've split the rendering function into two parts where the first one is for the header of a post and the second one for the main text. The former is only interested in the post's `title` and `author`:
+`__typename` should be used to switch based on the actual type, as shown below:
 
 ```ts
-import { graphql, Resolved } from './schema';
+let feedItem: FeedFragmentOutput;
 
-const postHeaderFragment = graphql('Post')({
-  title: true,
-  author: {
-    id: true,
-    username: true,
-    avatar: [{ width: 128, height: 128 }, true],
-  },
-});
-
-const renderPostHeader = (post: Resolved<typeof postHeaderFragment>) => {
-  // ...
-};
-```
-
-...and the latter is only interested in the post's `content`:
-
-```ts
-import { graphql, Resolved } from './schema';
-
-const postContentFragment = graphql('Post')({
-  content: true,
-});
-
-const renderPostContent = (post: Resolved<typeof postContentFragment>) => {
-  // ...
-};
-```
-
-Now on to the parent that renders both of them. Say the parent needs `id` as its own requirement. It also needs the data the children need so that it can pass that data to `renderPostHeader()` and `renderPostContent()`. You can write a fragment for the parent by merging the fragments of the children. Do so by using a special key spelled `...`:
-
-```ts
-import { graphql, Resolved } from './schema';
-
-const postFragment = graphql('Post')({
-  id: true,
-  '... as a': postHeaderFragment.
-  '... as b': postContentFragment.
-});
-
-const renderPost = (post: Resolved<typeof postFragment>) => {
-  const postHeader = renderPostHeader(post);
-  const postContent = renderPostHeader(post);
-  // ...
+if (feedItem.__typename === 'Comment') {
+  // TypeScript figures out feedItem is a Comment in this block, and ...
+} else if (feedItem.__typename === 'Post') {
+  // feedItem is a Post in this block.
 }
 ```
 
-Note that two `...`s are given [aliases](#using-aliases) to avoid key collision. `...` is similar to the object spread syntax of JavaScript. However, by using `...` as a key, you are telling `gql-in-ts` to _recursively_ merge fragments, while the object spread syntax merges objects only _shallowly_.
+#### Variables in queries
 
-_Caution: when you try to merge fragments with conflicting arguments, compileGraphQL will throw a runtime error. For example, the following is an error._
-
-```ts
-import { compileGraphQL } from './schema';
-
-compileGraphQL('query')({
-  '... as a': {
-    posts: { content: [{ maxLength: 100 }, true] },
-  },
-  '... as b': {
-    posts: { content: [{ maxLength: 200 }, true] },
-  },
-});
-// Error: Cannot merge fragments. Saw conflicting arguments...
-```
-
-### Using variables
-
-Variables allow queries to be compiled once and to be reused with different parameters. Compiling is not expensive so you could write arguments inline, as in [the first example](#the-graphql-function), but a performance freak can tune their code by using variables.
-
-To define a fragment with variables, declare the names and the types of the variables, and pass a callback to `graphql`. You can reference the variables from within the callback:
+Inputs to fields can be parameterized. In the example below,
 
 ```ts
 import { graphql } from './schema';
-
-const userFragment = graphql('User', { avatarSize: 'Int!' })(($) => ({
-  avatar: [{ width: $.avatarSize, height: $.avatarSize }, true],
+import { Input } from 'gql-in-ts';
+const query = graphql('Query', { postsAuthor: 'String!' })(($) => ({
+  posts: [
+    { author: $.postsAuthor },
+    {
+      title: true,
+      content: true,
+    },
+  ],
 }));
 ```
 
-The `graphql` function always returns the last argument as is. In this case, the last argument is a function. You can call it in other queries or fragments to pass variables down:
+The input `author` of the `posts` field is parameterized as `postsAuthor`. Parameters are also called variables. The `query` query takes a variable named `postsAuthor`.
+
+Note `{ postsAuthor: 'String!' }` in the definition of the `query` query. Variables should be defined in the same syntax as in real GraphQL.
+
+The TypeScript type of the variables can be obtained through the `Input` type. In the example below,
+
+```ts
+type QueryInput = Input<typeof query>;
+```
+
+`{ postsAuthor: string }` is assignable to `QueryInput`.
+
+When a query with variables is executed, the actual values for the variables have to be supplied. The `fetchGraphQL` function presented earlier can be improved to take variables into account:
 
 ```ts
 import { graphql } from './schema';
-
-const postFragment = graphql('Post', { avatarSize: 'Int!' })(($) => ({
-  id: true,
-  author: {
-    id: true,
-    '...': userFragment({ avatarSize: $.avatarSize }),
-  },
-}));
-```
-
-Likewise, pass the definitions of variables and a callback to `compileGraphQL` to compile a query with variables:
-
-```ts
-import { compileGraphQL } from './schema';
-
-const compiled = compileGraphQL('query', { avatarSize: 'Int!' })(($) => ({
-  posts: postFragment({ avatarSize: $.avatarSize }),
-}));
-expect(compiled).toEqual(
-  `query($avatarSize: Int!) {
-  posts {
-    id
-    author {
-      id
-      avatar(width: $avatarSize, height: $avatarSize)
-    }
-  }
-}`,
-);
-```
-
-The syntax of variable definitions follows that of real GraphQL (e.g. types are optional by default, and types with "!" are required). Variable definitions are type-checked using [template literal types](https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html).
-
-The types of the variables that a compiled query takes can be extracted from the second type parameter of `GraphQLString`. Therefore, the `makeGraphQLRequest` function from the earlier section can be rewritten to take variables into account:
-
-```ts
-import { GraphQLString } from './schema';
-
-const makeGraphQLRequest = async <TResolved, TVariables>(
-  compiled: GraphQLString<TResolved, TVariables>,
-  variables: TVariables,
-): Promise<TResolved> => {
+import { Output, Input } from 'gql-in-ts';
+const fetchGraphQL = async <T>(query: T, variables: Input<T>) => {
   const response = await fetch('http://example.com/graphql', {
     method: 'POST',
-    body: JSON.stringify({ query: compiled, variables }),
+    body: JSON.stringify({ query, variables }),
     headers: {
       'content-type': 'application/json',
-      // If your endpoint requires authorization, comment out the code below.
+      // If your endpoint requires authorization, uncomment the code below.
       // authorization: '...'
     },
   });
   const responseData = (await response.json()).data;
-  return responseData;
+  return responseData as Output<T>;
 };
 ```
 
+#### Variables in fragments
+
+When using a parameterized fragment in another fragment or query, invoke the fragment as a function. In the example below,
+
+```ts
+import { graphql } from './schema';
+const userFragment = graphql('User', { avatarSize: 'Int!' })(($) => ({
+  avatar: [{ size: $.avatarSize }, true],
+}));
+
+const query = graphql('Query', { postsAuthor: 'String!' })(($) => ({
+  posts: [
+    { author: $.postsAuthor },
+    {
+      title: true,
+      content: true,
+      author: userFragment({ avatarSize: 128 }),
+    },
+  ],
+}));
+```
+
+`userFragment` is getting the variable value `{ avatarSize: 128 }`.
+
+A variable can also be specified using another variable instead of a literal. In the example below,
+
+```ts
+import { graphql } from './schema';
+const query = graphql('Query', { postsAuthor: 'String!', postsAuthorAvatarSize: 'Int!' })(($) => ({
+  posts: [
+    { author: $.postsAuthor },
+    {
+      title: true,
+      content: true,
+      author: userFragment({ avatarSize: $.postsAuthorAvatarSize }),
+    },
+  ],
+}));
+```
+
+the `query` query has gotten another variable named `postsAuthorAvatarSize`. It then passes that variable as an argument to `userFragment`.
+
 ## Limitations
 
-At the moment `gql-in-ts` has the following limitations:
-
-- It cannot eliminate extraneous fields.
-  - As it is hard to prevent objects from having extra properties in TypeScript, you won't get a type error even if you include a non-existent field in your query. Since GraphQL execution engines throw an error when encountering an unknown field, this introduces a scenario where the code passes type checks but errors at runtime.
+Currently `gql-in-ts` does not warn about non-existent fields. As it is hard to prevent objects from having extra properties in TypeScript, you won't get a type error even if you include a non-existent field in your query. Because GraphQL execution engines reject unknown fields, a type mismatch could cause runtime errors despite passing TypeScript checks.
 
 ## Related works
 
-Several other solutions employ an approach similar to this library. This project is particularly indebted to [GraphQL Zeus](https://github.com/graphql-editor/graphql-zeus) and [genql](https://github.com/remorses/genql) for their idea of using TypeScript type transformations to precisely type GraphQL response data. If you are interested in this project, you may want to take a look at them as well.
+This project is particularly indebted to [GraphQL Zeus](https://github.com/graphql-editor/graphql-zeus) and [genql](https://github.com/remorses/genql) for their idea of using TypeScript type transformations to precisely type GraphQL response data. If you are interested in this project, you may want to take a look at them as well.

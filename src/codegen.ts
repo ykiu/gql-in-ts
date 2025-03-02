@@ -129,7 +129,7 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
       ...indent(compileTypenameField([type])),
       ...indent(fields.flatMap(compileOutputField)),
       ...indent(compileSpreadField(type)),
-      '}',
+      '};',
       '',
     ];
   };
@@ -143,7 +143,7 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
       ...indent(fields.flatMap(compileOutputField)),
       ...indent(compileSpreadField(type)),
       ...indent(possibleTypes.flatMap(compileTypedSpreadField)),
-      '}',
+      '};',
       '',
     ];
   };
@@ -155,7 +155,7 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
       ...indent(compileTypenameField(possibleTypes)),
       ...indent(compileSpreadField(type)),
       ...indent(possibleTypes.flatMap(compileTypedSpreadField)),
-      '}',
+      '};',
       '',
     ];
   };
@@ -165,7 +165,7 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
     return [
       `export type ${type.name} = {`,
       ...indent(fields.flatMap(compileInputFieldOrArgument)),
-      '}',
+      '};',
       '',
     ];
   };
@@ -174,7 +174,7 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
     return [
       `export type ${type.name} = Predicate<`,
       ...indent(type.getValues().map((value) => `| "${value.name}"`)),
-      `>`,
+      `>;`,
       '',
     ];
   };
@@ -197,7 +197,7 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
     if (mutationType) fields.push(`mutation: ${mutationType.name};`);
     const subscriptionType = schema.getSubscriptionType();
     if (subscriptionType) fields.push(`subscription: ${subscriptionType.name};`);
-    return [`export type Schema = {`, ...indent(fields), '}', ''];
+    return [`export type Schema = {`, ...indent(fields), '};', ''];
   };
 
   const generateScalarMapping = () => {
@@ -246,17 +246,12 @@ const compileDocument = (schema: GraphQLSchema, params: CompileParams): string[]
     `  Nullable,`,
     `  Predicate,`,
     `  makeGraphql,`,
-    `  makeCompileGraphQL,`,
-    `  makeDefineVariables,`,
     `} from '${params.importPath}';`,
     '',
   ];
 
   const footer = [
     `export const graphql = makeGraphql<OutputCompositeTypeMap, InputTypeMap>();`,
-    `export const compileGraphQL = makeCompileGraphQL<InputTypeMap, Schema>();`,
-    `export type { Resolved, Selection, GraphQLString } from '${params.importPath}';`,
-    `export const defineVariables = makeDefineVariables<InputTypeMap>();`,
     '',
   ];
   return [
