@@ -16,7 +16,7 @@ https://github.com/user-attachments/assets/696a82e4-dfa6-4843-ac6b-8126125e61ae
 
 ## Supported TypeScript versions
 
-Supports TypeScript versions 4.4 to 5.1.
+Supports TypeScript versions 4.4 to 5.8.
 
 ## Installing
 

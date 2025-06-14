@@ -6,6 +6,13 @@ import ts4_8 from 'ts4.8';
 import ts4_9 from 'ts4.9';
 import ts5_0 from 'ts5.0';
 import ts5_1 from 'ts5.1';
+import ts5_2 from 'ts5.2';
+import ts5_3 from 'ts5.3';
+import ts5_4 from 'ts5.4';
+import ts5_5 from 'ts5.5';
+import ts5_6 from 'ts5.6';
+import ts5_7 from 'ts5.7';
+import ts5_8 from 'ts5.8';
 import * as path from 'path';
 import { readFileSync } from 'fs';
 
@@ -27,7 +34,14 @@ const diagnosticsCount = [
   ts4_8,
   ts4_9,
   ts5_0,
-  ts5_1
+  ts5_1,
+  ts5_2,
+  ts5_3,
+  ts5_4,
+  ts5_5,
+  ts5_6,
+  ts5_7,
+  ts5_8,
 ].map(
   (ts) => {
   const readConfigResult = ts.readConfigFile(CONFIG_FILE_PATH, readFile);
