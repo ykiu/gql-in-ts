@@ -4,8 +4,6 @@
 
 - Support TypeScript 7 ([#24](https://github.com/ykiu/gql-in-ts/pull/24))
 - Support TypeScript 5.2 thru 5.8 ([#23](https://github.com/ykiu/gql-in-ts/pull/23))
-- Release ([#20](https://github.com/ykiu/gql-in-ts/pull/20))
-
 
 ## v0.3.0
 
