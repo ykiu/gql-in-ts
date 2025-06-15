@@ -1,5 +1,10 @@
 # CHANGES
 
+## v0.3.2
+
+- Release ([#22](https://github.com/ykiu/gql-in-ts/pull/22))
+
+
 ## v0.3.1
 
 - Support TypeScript 7 ([#24](https://github.com/ykiu/gql-in-ts/pull/24))
